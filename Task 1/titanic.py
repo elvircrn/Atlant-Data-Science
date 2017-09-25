@@ -8,6 +8,7 @@ from sklearn.svm import SVC
 from sklearn.metrics import accuracy_score
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
+from sklearn.naive_bayes import GaussianNB
 from sklearn import preprocessing
 
 
@@ -118,19 +119,6 @@ def scale_features(features):
     return features
 
 
-def train_svm(features, labels):
-    """
-    :param features: Numpy feature matrix
-    :param labels: Numpy feature vector
-    :return: model
-    """
-
-    clf = SVC()
-    clf.fit(features, labels)
-
-    return clf
-
-
 def get_titles(data):
     return list(set(map(lambda x: extract_title(x), data['Name'])))
 
@@ -161,6 +149,25 @@ def train_decision_tree(features, labels):
     return dtc
 
 
+def train_svm(features, labels):
+    """
+    :param features: Numpy feature matrix
+    :param labels: Numpy feature vector
+    :return: model
+    """
+
+    clf = SVC(probability=True)
+    clf.fit(features, labels)
+
+    return clf
+
+
+def train_bayes(features, labels):
+    model = GaussianNB()
+    model.fit(features, labels)
+    return model
+
+
 def run():
     features, label = get_data('Data/train.csv')
 
@@ -169,17 +176,30 @@ def run():
 
     f, truth = extract(preprocess(read_test_data('Data/test.csv')))
 
-    predictions = [model.predict(f) for model in [train_svm(features, label), 
-                                                  train_logreg(features, label), 
-                                                  train_decision_tree(features, label)]]
+    models = {'svm': train_svm(features, label),
+              'lgr': train_logreg(features, label),
+              'dtr': train_decision_tree(features, label),
+              'nbc': train_bayes(features, label)}
+
+    predictions = [model.predict(f) for key, model in models.items()]
+    pred_prob = [model.predict_proba(f) for key, model in models.items()]
 
     print('SVM w/ Gaussian kernel: ', accuracy_score(truth, predictions[0]))
     print('LogReg accuracy: ', accuracy_score(truth, predictions[1]))
     print('Decision tree accuracy: ', accuracy_score(truth, predictions[2]))
+    print('Naive Bayes accuracy: ', accuracy_score(truth, predictions[3]))
+
     print('Truth:              ', truth)
     print('SVM pred:           ', predictions[0])
     print('LogReg pred:        ', predictions[1])
     print('Decision tree pred: ', predictions[2])
+    print('Naive bayes pred:   ', predictions[3])
+
+    print('SVM prob pred:           ', pred_prob[0][:, 0])
+    print('LogReg prob pred:        ', pred_prob[1][:, 0])
+    print('Decision tree prob pred: ', pred_prob[2][:, 0])
+    print('Naive bayes prob pred:   ', pred_prob[3][:, 0])
+
 
     return
 
