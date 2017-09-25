@@ -140,7 +140,6 @@ def extract(data):
     label = data['Survived'].as_matrix()
     del data['Survived']
     features = data.as_matrix()
-    # features = np.delete(features, 0, 1)
     return features, label
 
 
@@ -163,33 +162,25 @@ def train_decision_tree(features, labels):
 
 
 def run():
-    features, label = get_data('Data/Titanic_dataset.csv')
+    features, label = get_data('Data/train.csv')
 
     print('Features:')
     print(features)
 
-    model = train_svm(features, label)
+    f, truth = extract(preprocess(read_test_data('Data/test.csv')))
 
-    f, truth = extract(preprocess(read_test_data('Data/Titanic_dataset_for_testing.csv')))
+    predictions = [model.predict(f) for model in [train_svm(features, label), 
+                                                  train_logreg(features, label), 
+                                                  train_decision_tree(features, label)]]
 
-    prediction1 = model.predict(f)
-
-    print('SVM w/ Gaussian kernel: ', accuracy_score(truth, prediction1))
-
-    model = train_logreg(features, label)
-    prediction2 = model.predict(f)
-    print('LogReg accuracy: ', accuracy_score(truth, prediction2))
-
-    # read_test_data('')
-
-    model = train_decision_tree(features, label)
-    prediction3 = model.predict(f)
-    print('Decision tree accuracy: ', accuracy_score(truth, prediction3))
-
+    print('SVM w/ Gaussian kernel: ', accuracy_score(truth, predictions[0]))
+    print('LogReg accuracy: ', accuracy_score(truth, predictions[1]))
+    print('Decision tree accuracy: ', accuracy_score(truth, predictions[2]))
     print('Truth:              ', truth)
-    print('SVM pred:           ', prediction1)
-    print('LogReg pred:        ', prediction2)
-    print('Decision tree pred: ', prediction3)
+    print('SVM pred:           ', predictions[0])
+    print('LogReg pred:        ', predictions[1])
+    print('Decision tree pred: ', predictions[2])
+
     return
 
 
