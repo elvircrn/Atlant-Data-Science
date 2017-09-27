@@ -5,6 +5,7 @@ import re
 import scipy
 import seaborn
 from sklearn.svm import SVC
+from sklearn.model_selection import cross_val_score, GridSearchCV
 from sklearn.metrics import accuracy_score
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
@@ -195,6 +196,10 @@ def run():
               'lgr': train_logreg(features, label),
               'dtr': train_decision_tree(features, label),
               'nbc': train_bayes(features, label)}
+
+    parameters = {'kernel': ('linear', 'rbf'), 'C': [1, 10]}
+    clf = GridSearchCV(SVC(probability=True), parameters)
+    models['svm'] = clf.fit(features, label)
 
     predictions = [model.predict(f) - 1 for key, model in models.items()]
     pred_prob = [model.predict_proba(f) for key, model in models.items()]
