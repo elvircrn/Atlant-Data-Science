@@ -155,7 +155,10 @@ def get_data(filename):
 def train_logreg(features, labels):
     lreg = LogisticRegression(C=10)
     lreg.fit(features, labels)
-    return lreg
+
+    parameters = {'C': np.arange(0.1, 20, 0.1)}
+    model = GridSearchCV(LogisticRegression(), parameters)
+    return model.fit(features, labels)
 
 
 def train_decision_tree(features, labels):
@@ -171,10 +174,9 @@ def train_svm(features, labels):
     :return: model
     """
 
-    clf = SVC(probability=True)
-    clf.fit(features, labels)
-
-    return clf
+    parameters = {'kernel': ('linear', 'rbf'), 'C': np.arange(0.1, 20, 0.1)}
+    model = GridSearchCV(SVC(probability=True), parameters)
+    return model.fit(features, labels)
 
 
 def train_bayes(features, labels):
@@ -197,9 +199,9 @@ def run():
               'dtr': train_decision_tree(features, label),
               'nbc': train_bayes(features, label)}
 
-    parameters = {'kernel': ('linear', 'rbf'), 'C': [1, 10]}
-    clf = GridSearchCV(SVC(probability=True), parameters)
-    models['svm'] = clf.fit(features, label)
+    # parameters = {'kernel': ('linear', 'rbf'), 'C': [1, 10]}
+    # clf = GridSearchCV(SVC(probability=True), parameters)
+    # models['svm'] = clf.fit(features, label)
 
     predictions = [model.predict(f) - 1 for key, model in models.items()]
     pred_prob = [model.predict_proba(f) for key, model in models.items()]
