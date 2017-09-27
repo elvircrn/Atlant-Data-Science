@@ -10,6 +10,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.naive_bayes import GaussianNB
 from sklearn import preprocessing
+from sklearn.ensemble import AdaBoostClassifier
 
 
 def read_training_data(filename):
@@ -63,8 +64,19 @@ def del_na_rows(data):
 
 
 def cols_with_nan(data):
-    """ Test sample result: Age, Cabin, Embarked """
+    """ Test sample result: Age"""
     return list(filter(lambda x: data[x].isnull().any().any(), data.columns))
+
+
+def reduce_age(age):
+    if age < 6:
+        return 0
+    elif age < 18:
+        return 1
+    elif age < 50:
+        return 2
+    else:
+        return 3
 
 
 def clean(data):
@@ -72,7 +84,9 @@ def clean(data):
     data['Name'], name_ids = map_str_to_ind(data, 'Name')
     # data['PClass'], pclass_ids = map_str_to_ind(data, 'PClass')
     data['PClass'] = data['PClass'].apply(map_pclass_to_ind)
-    data['Sex'], sex_id = map_str_to_ind(data, 'Sex')
+    # data['Sex'], sex_id = map_str_to_ind(data, 'Sex')
+    data['Age'] = data['Age'].apply(reduce_age)
+    del data['Sex']
     del data['Name']
     return data
 
@@ -175,13 +189,14 @@ def run():
     print(features)
 
     f, truth = extract(preprocess(read_test_data('Data/test.csv')))
+    truth = truth - 1
 
     models = {'svm': train_svm(features, label),
               'lgr': train_logreg(features, label),
               'dtr': train_decision_tree(features, label),
               'nbc': train_bayes(features, label)}
 
-    predictions = [model.predict(f) for key, model in models.items()]
+    predictions = [model.predict(f) - 1 for key, model in models.items()]
     pred_prob = [model.predict_proba(f) for key, model in models.items()]
 
     print('SVM w/ Gaussian kernel: ', accuracy_score(truth, predictions[0]))
@@ -200,9 +215,9 @@ def run():
     print('Decision tree prob pred: ', pred_prob[2][:, 0])
     print('Naive bayes prob pred:   ', pred_prob[3][:, 0])
 
-
     return
 
 
-run()
+if __name__ == '__main__':
+    run()
 
