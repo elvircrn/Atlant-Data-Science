@@ -1,5 +1,5 @@
 
-# Task 1 (Titanic)
+# Task 2 (Titanic)
 
 The given problem is a Boolean classification, supervised learning problem where we need to find a model that approximates a Boolean valued function based on a given training set.
 
@@ -29,7 +29,7 @@ Further, passenger title was extracted from each name entry, and a new column ca
 
 We then proceed to plot the dataset:
 
-![alt text](Task%201/Documentation/task1train.png)
+![alt text](Task2/Documentation/task1train.png)
 
 ## Learning Algorithms Summary and Analysis
 
