@@ -2,8 +2,6 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import re
-import scipy
-import seaborn
 from sklearn.svm import SVC
 from sklearn.model_selection import cross_val_score, GridSearchCV
 from sklearn.metrics import accuracy_score
@@ -11,7 +9,12 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.naive_bayes import GaussianNB
 from sklearn import preprocessing
-from sklearn.ensemble import AdaBoostClassifier
+from mpl_toolkits.mplot3d import Axes3D
+
+
+titles = ['Madame', 'Ms', 'Mansouer', 'Sir', 'Rev',
+          'Mlle', 'Master', 'Col', 'Colonel', 'Major',
+          'Mr', 'Captain', 'Dr', 'Lady', 'Miss', 'Mrs']
 
 
 def read_training_data(filename):
@@ -34,9 +37,6 @@ def map_str_to_ind(data, colname):
 
 
 def map_title_to_ind(title):
-    titles = ['Madame', 'Ms', 'Mansouer', 'Sir', 'Rev',
-              'Mlle', 'Master', 'Col', 'Colonel', 'Major',
-              'Mr', 'Captain', 'Dr', 'Lady', 'Miss', 'Mrs']
     try:
         return titles.index(title) + 1
     except ValueError:
@@ -44,9 +44,6 @@ def map_title_to_ind(title):
 
 
 def is_title(title):
-    titles = ['Madame', 'Ms', 'Mansouer', 'Sir', 'Rev',
-              'Mlle', 'Master', 'Col', 'Colonel', 'Major',
-              'Mr', 'Captain', 'Dr', 'Lady', 'Miss', 'Mrs']
     return title in titles
 
 
@@ -74,19 +71,22 @@ def reduce_age(age):
         return 0
     elif age < 18:
         return 1
-    elif age < 50:
+    elif age < 40:
         return 2
-    else:
+    elif age < 50:
         return 3
+    else:
+        return 4
 
 
-def clean(data):
+def clean(data, group_age=False):
     data = fill_missing(data)
     data['Name'], name_ids = map_str_to_ind(data, 'Name')
     # data['PClass'], pclass_ids = map_str_to_ind(data, 'PClass')
     data['PClass'] = data['PClass'].apply(map_pclass_to_ind)
     # data['Sex'], sex_id = map_str_to_ind(data, 'Sex')
-    data['Age'] = data['Age'].apply(reduce_age)
+    if group_age:
+        data['Age'] = data['Age'].apply(reduce_age)
     del data['Sex']
     del data['Name']
     return data
@@ -105,7 +105,8 @@ def extract_title(name, gender=None):
 
 
 def map_pclass_to_ind(pclass):
-    return ord(pclass[:1]) - ord('0')
+    pclass = ord(pclass[:1]) - ord('0')
+    return 1.5 if pclass < 0 else pclass
 
 
 def title_to_gender(title):
@@ -122,9 +123,9 @@ def generate_features(data):
     return data
 
 
-def preprocess(data):
+def preprocess(data, group_age=False):
     data = generate_features(data)
-    data = clean(data)
+    data = clean(data, group_age)
     return data
 
 
@@ -148,17 +149,23 @@ def extract(data):
 
 def get_data(filename):
     data = read_training_data(filename)
-    data = preprocess(data)
+    data = preprocess(data, group_age=True)
     return extract(data)
 
 
-def train_logreg(features, labels):
-    lreg = LogisticRegression(C=10)
-    lreg.fit(features, labels)
+def get_test_data(filename):
+    data = read_test_data(filename)
+    data = preprocess(data, group_age=True)
+    return extract(data)
 
-    parameters = {'C': np.arange(0.1, 20, 0.1)}
-    model = GridSearchCV(LogisticRegression(), parameters)
-    return model.fit(features, labels)
+
+def train_logreg(features, labels, cross_validate=False):
+    if cross_validate:
+        parameters = {'C': np.arange(0.1, 20, 0.5)}
+        model = GridSearchCV(LogisticRegression(), parameters, n_jobs=8)
+        return model.fit(features, labels)
+    else:
+        return LogisticRegression(C=10).fit(features, labels)
 
 
 def train_decision_tree(features, labels):
@@ -167,16 +174,19 @@ def train_decision_tree(features, labels):
     return dtc
 
 
-def train_svm(features, labels):
+def train_svm(features, labels, cross_validate=False):
     """
     :param features: Numpy feature matrix
     :param labels: Numpy feature vector
     :return: model
     """
-
-    parameters = {'kernel': ('linear', 'rbf'), 'C': np.arange(0.1, 20, 0.1)}
-    model = GridSearchCV(SVC(probability=True), parameters)
-    return model.fit(features, labels)
+    if cross_validate:
+        parameters = {'kernel': ('linear', 'rbf'), 'C': np.arange(0.1, 20, 0.5)}
+        model = GridSearchCV(SVC(probability=True), parameters, n_jobs=8)
+        return model.fit(features, labels)
+    else:
+        model = SVC(probability=True)
+        return model.fit(features, labels)
 
 
 def train_bayes(features, labels):
@@ -186,22 +196,22 @@ def train_bayes(features, labels):
 
 
 def run():
-    features, label = get_data('Data/train.csv')
+    features, labels = get_data('Data/train.csv')
+    generate_predictions(features, labels)
+    # plot_features(features, labels)
 
+
+def generate_predictions(features, labels):
     print('Features:')
     print(features)
 
-    f, truth = extract(preprocess(read_test_data('Data/test.csv')))
+    f, truth = get_test_data('Data/test.csv')
     truth = truth - 1
 
-    models = {'svm': train_svm(features, label),
-              'lgr': train_logreg(features, label),
-              'dtr': train_decision_tree(features, label),
-              'nbc': train_bayes(features, label)}
-
-    # parameters = {'kernel': ('linear', 'rbf'), 'C': [1, 10]}
-    # clf = GridSearchCV(SVC(probability=True), parameters)
-    # models['svm'] = clf.fit(features, label)
+    models = {'svm': train_svm(features, labels, cross_validate=True),
+              'lgr': train_logreg(features, labels, cross_validate=True),
+              'dtr': train_decision_tree(features, labels),
+              'nbc': train_bayes(features, labels)}
 
     predictions = [model.predict(f) - 1 for key, model in models.items()]
     pred_prob = [model.predict_proba(f) for key, model in models.items()]
@@ -223,6 +233,25 @@ def run():
     print('Naive bayes prob pred:   ', pred_prob[3][:, 0])
 
     return
+
+
+def plot_features(features, labels):
+    labels = labels - 1
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+
+    for f, l in zip(features, labels):
+        if l:
+            ax.scatter(f[0], f[1], f[2], color='r', marker='o')
+        else:
+            ax.scatter(f[0], f[1], f[2], color='b', marker='x')
+    ax.set_xlabel('PClass')
+    ax.set_ylabel('Age Group')
+    ax.set_zlabel('Title')
+    ax.set_zticks(np.arange(0, len(titles), 1))
+    ax.set_zticklabels(titles)
+
+    plt.show()
 
 
 if __name__ == '__main__':
