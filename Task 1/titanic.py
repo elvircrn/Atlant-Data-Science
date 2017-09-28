@@ -197,8 +197,8 @@ def train_bayes(features, labels):
 
 def run():
     features, labels = get_data('Data/train.csv')
-    generate_predictions(features, labels)
-    # plot_features(features, labels)
+    # generate_predictions(features, labels)
+    plot_features(features, labels)
 
 
 def generate_predictions(features, labels):
