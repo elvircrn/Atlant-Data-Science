@@ -93,7 +93,7 @@ def clean(data, group_age=False):
 
 
 def extract_title(name, gender=None):
-    res = re.search(',\s\w+', name)
+    res = re.search(',\s\w', name)
     if gender is None:
         if res is None:
             return name.split()[1]
