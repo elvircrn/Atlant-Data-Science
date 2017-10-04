@@ -11,8 +11,6 @@
 6. map plot keywords
 7. delete useless
 
-
-
 ## movies.csv
 movieId
 
@@ -25,7 +23,7 @@ tagId
 
 tag
 
-### ratings.csv
+## ratings.csv
 userId
 
 movieId
@@ -33,7 +31,7 @@ movieId
 rating
 timestamp
 
-### tags.csv
+## tags.csv
 userId
 
 movieId
