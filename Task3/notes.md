@@ -35,6 +35,7 @@ timestamp
 userId
 
 movieId
+
 tag
 
 timestamp
