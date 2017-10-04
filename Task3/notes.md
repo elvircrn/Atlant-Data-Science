@@ -11,8 +11,6 @@
 6. map plot keywords
 7. delete useless
 
-
-
 ## movies.csv
 movieId
 
@@ -25,12 +23,32 @@ tagId
 
 tag
 
+## ratings.csv
+userId
+
+movieId
+
+rating
+timestamp
+
+## tags.csv
+userId
+
+movieId
+tag
+
+timestamp
+
 ## genome-scores.csv
 movieId
 
 tagId
 
 relevance
+
+1. delete relevance
+2.
+3.
 
 ## links.csv
 movieId
@@ -40,12 +58,6 @@ imdbId
 tmdbId
 
 ## Movie Metadata
-
-### ratings.csv
-userId,movieId,rating,timestamp
-
-### tags.csv
-userId,movieId,tag,timestamp
 
 ### movie\ metadata.csv
 color
