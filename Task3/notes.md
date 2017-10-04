@@ -48,7 +48,8 @@ na -> 0
 na -> 0
 
 ### duration
-map to seconds
+given in minutes
+na -> avg
 
 ### director facebook likes
 na -> 0
@@ -66,7 +67,7 @@ na -> 0
 na -> 0
 
 ### genres
-binary encoding?
+binary encode
 
 ### actor 1 name
 map to index
@@ -113,9 +114,13 @@ map str to ind
 map str to ind
 
 ### content rating
+map str to ind
 
 
 ### budget
+nan -> 0
+normalize:
+    * number of digits(log10)
 
 
 ### title year
