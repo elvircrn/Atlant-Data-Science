@@ -8,7 +8,7 @@ def map_str_to_ind(data, colname):
 
 def map_str_to_inds(data, colnames):
     for colname in colnames:
-        data[colname] = map_str_to_ind(data, colname.astype(str)) + 1
+        data[colname] = map_str_to_ind(data, colname) + 1
     return data
 
 
@@ -20,7 +20,15 @@ def get_tag_set(column, separator='|'):
     return tag_set
 
 
+def get_tag_dict(column, separator='|'):
+    tag_set = get_tag_set(column, separator)
+    tag_dict = {}
+    for idx, tag in enumerate(tag_set):
+        tag_dict[tag] = idx
+    return tag_dict
+
+
 def normalize(column, min_max=(0.0, 1.0)):
     col_max = column.max()
     col_min = column.min()
-    return column.apply(lambda x: ((x - col_min) / (col_max - col_min)) * (min_max[0] - min_max[1]) + min_max[0])
+    return column.apply(lambda x: ((x - col_min) / (col_max - col_min)) * (min_max[1] - min_max[0]) + min_max[0])

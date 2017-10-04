@@ -1,5 +1,17 @@
 # Dataset Preprocessing and Analysis
 
+## Steps:
+
+### movie meta
+1. fillna
+2. map str to ind
+3. normalize
+4. movie str preprocess
+5. binary encode genres
+6. map plot keywords
+7. delete useless
+
+
 
 ## movies.csv
 movieId
@@ -100,6 +112,8 @@ nan -> 0
 ```
 8087 plot keywords in dataset.
 Max 5 keywords per movie.
+fillna to 'none'
+astype(str)
 
 ### movie imdb link
 Extract id.
