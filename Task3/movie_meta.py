@@ -1,6 +1,4 @@
 import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
 from preprocessing import *
 import re
 from functools import reduce
@@ -12,13 +10,13 @@ def remove_imdb_prefix(link):
 
 
 def binary_encode_movie_genres(movie_meta):
-    # .index()
     tag_list = list(get_tag_set(movie_meta['genres']))
 
-    movie_meta['genres'] = movie_meta['genres'].apply(lambda x:
-                                                      reduce(lambda a, b: a + b,
-                                                             map(lambda tag: (1 << tag_list.index(tag)),
-                                                                 x.split('|')))).astype(int)
+    movie_meta['genres'] = movie_meta['genres'] \
+        .apply(lambda x:
+               reduce(lambda a, b: a + b,
+                      map(lambda tag: (1 << tag_list.index(tag)),
+                          x.split('|')))).astype(int)
     return movie_meta
 
 
@@ -97,11 +95,10 @@ def map_plot_keywords(movie_meta):
 
 
 def preprocess(movie_meta):
-    return del_useless_movie_meta(
-        map_plot_keywords(
-            binary_encode_movie_genres(
-                movie_str_preprocess(
-                    normalize_movie_meta(
-                        map_mov_meta_strs_to_ind(
-                            movie_meta_fillna(
-                                movie_meta)))))))
+    return (del_useless_movie_meta
+            (map_plot_keywords
+             (binary_encode_movie_genres
+              (movie_str_preprocess
+               (normalize_movie_meta
+                (map_mov_meta_strs_to_ind
+                 (movie_meta_fillna(movie_meta))))))))
