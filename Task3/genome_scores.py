@@ -6,4 +6,4 @@ import pandas as pd
 
 
 def preprocess(genome_scores):
-    print(genome_scores.groupby(by=['movieId', 'tagId'].sort(key='relevance')))
+    return genome_scores

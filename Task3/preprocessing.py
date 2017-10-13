@@ -2,6 +2,13 @@ def map_col_to_ind(column):
     return column.astype('category').cat.codes.astype(int)
 
 
+def map_to_ind(array):
+    mapped = {}
+    for idx, el in enumerate(array):
+        mapped[el] = idx
+    return mapped
+
+
 def map_str_to_ind(data, colname):
     return map_col_to_ind(data[colname])
 

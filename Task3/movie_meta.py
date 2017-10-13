@@ -43,7 +43,7 @@ def map_mov_meta_strs_to_ind(movie_meta):
 
 
 def extract_imdb_id(column):
-    return column.apply(lambda link: remove_imdb_prefix(link)).astype(str)
+    return column.apply(lambda link: remove_imdb_prefix(link)).astype('str')
 
 
 def movie_meta_fillna(movie_meta):
@@ -78,7 +78,7 @@ def normalize_movie_meta(movie_meta):
 
 
 def movie_str_preprocess(movie_meta):
-    movie_meta['imdb_id'] = extract_imdb_id(movie_meta['movie_imdb_link'])
+    movie_meta['imdbId'] = extract_imdb_id(movie_meta['movie_imdb_link'])
     return movie_meta
 
 

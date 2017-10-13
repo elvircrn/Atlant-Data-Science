@@ -1,4 +1,21 @@
-# Dataset Preprocessing and Analysis
+
+Links:
+[Model-based CF](http://www.cs.carleton.edu/cs_comps/0607/recommend/recommender/modelbased.html)
+[One-Hot vs integer](https://machinelearningmastery.com/why-one-hot-encode-data-in-machine-learning/)
+[Matrix Factorization](http://www.quuxlabs.com/blog/2010/09/matrix-factorization-a-simple-tutorial-and-implementation-in-python/)
+[Wikia](http://stat.wikia.com/wiki/Matrix_factorization)
+[C++ SVD RS](https://github.com/timnugent/svd-recommend)
+[Another C++ RS](https://github.com/yixuan/recosystem)
+[SVD++](http://www.recsyswiki.com/wiki/SVD%2B%2B)
+[Basic Clustering Model](http://cs229.stanford.edu/proj2013/Bystrom-MovieRecommendationsFromUserRatings.pdf)
+[Blog](http://sifter.org/~simon/journal/20061211.html)
+[SVD & PMF Ppt](http://dparra.sitios.ing.uc.cl/classes/recsys-2015-2/student_ppts/CRojas_SVDpp-PMF.pdf)
+[SVD vs SVD++](https://www.quora.com/Whats-the-difference-between-SVD-and-SVD++)
+[Netflix clustering](https://rpubs.com/nishantsbi/93582)
+# Dataset Preprocessing and Analysis 
+
+Max movie id: 176279
+Max user id: 270896
 
 ## Steps:
 
@@ -47,7 +64,7 @@ tagId
 
 relevance
 
-1. delete relevance
+1.
 2.
 3.
 
