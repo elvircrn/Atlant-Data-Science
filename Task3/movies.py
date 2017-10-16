@@ -49,19 +49,28 @@ def f():
     # plt.show()
 
 
+def get_mov_meta():
+    mm = movie_meta.preprocess(pd.read_csv('Data/movie_metadata.csv'))
+    gs = genome_scores.preprocess(pd.read_csv('Data/genome-scores.csv'))
+    gt = pd.read_csv('Data/movie-gtags.csv')
+    lk = links.preprocess(pd.read_csv('Data/links.csv'))
+    mov_meta = merge_link(mm, lk)
+    mov_meta = merge_gtags(mov_meta, gt)
+    return mov_meta
+
+
 def main():
-    # mm = movie_meta.preprocess(pd.read_csv('Data/movie_metadata.csv'))
-    # gs = genome_scores.preprocess(pd.read_csv('Data/genome-scores.csv'))
-    # gt = pd.read_csv('Data/movie-gtags.csv')
-    # lk = links.preprocess(pd.read_csv('Data/links.csv'))
-    # mov_meta = merge_link(mm, lk)
-    # mov_meta = merge_gtags(mov_meta, gt)
-    # print('User cound: ', len(ratings['userId'].unique()))
-    # print('Max movie id: ', lk['movieId'].max())
+    # mov_meta = get_mov_meta()
+    # print(mov_meta)
+    # print(mov_meta.shape)
     # prototype.approx()
-    r, y, mov_map, usr_map = ratings.get_rating_matrix()
-    r = ratings.als(r, y)
-    r.to_csv('Data/predictions.csv')
+
+    r, y, mov_map, usr_map, r_cv, y_cv = ratings.get_rating_matrix(cv=0.05)
+    print(np.sum(y_cv))
+    X, Y, B = ratings.als(r, y, R_cv=r_cv, W_cv=y_cv)
+    pd.DataFrame(X).to_csv('Predictions/X.csv')
+    pd.DataFrame(Y).to_csv('Predictions/Y.csv')
+    pd.DataFrame(B).to_csv('Predictions/B.csv')
     print('Finished')
 
 

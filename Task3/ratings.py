@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 from preprocessing import map_to_ind
 
 from pandas import DataFrame
@@ -42,7 +43,7 @@ def user_bias(R, D, U, mu, bq):
             if R[u][i] > 0:
                 Ru = Ru + 1
                 s = s + R[u][i] - mu - bq[i]
-        bp[i] = s / (lambda2 + Ru)
+        bp[u] = s / (lambda2 + Ru)
 
     return bp
 
@@ -51,7 +52,7 @@ def get_bias(R, D, U):
     mu = avg(R)
 
     bq = item_bias(R, D, U, mu)
-    bp = user_bias(R, D, U, mu, bq)  # User bias
+    bp = user_bias(R, D, U, mu, bq)
 
     B = np.zeros([U, D])
     for i in range(0, U):
@@ -60,12 +61,11 @@ def get_bias(R, D, U):
     return B
 
 
-def get_error(R, W, X, Y):
+def get_error(R, W, X, Y, B):
     return np.sum((W * (R - np.dot(X, Y)) ** 2))
 
 
 def get_reduced_ratings(ratings, count, by_movie=True):
-    reduced_ratings = DataFrame()
     column = 'movieId' if by_movie else 'userId'
     entity_grps = ratings.groupby(by=column, sort=True).size().reset_index(name='Size')
     entity_grps = DataFrame.sort_values(entity_grps, by='Size', ascending=False)['Size']
@@ -75,37 +75,60 @@ def get_reduced_ratings(ratings, count, by_movie=True):
     return reduced_ratings
 
 
-def als(R, W, K=10, steps=3000):
+def als(R, W, K=100, steps=30, R_cv=None, W_cv=None):
+    if (R_cv is None) ^ (W_cv is None):
+        raise ValueError('R_cv and W_cv have to be either None or not None')
+    elif R_cv is not None:
+        W_cv = W_cv.astype(np.float64, copy=False)
+        R_cv = R_cv.astype(np.float64, copy=False)
+
     W = W.astype(np.float64, copy=False)
     R = R.astype(np.float64, copy=False)
-    U = len(R)
-    D = len(R[0])
-    X = np.random.rand(U, K).astype(np.float64)
-    Y = np.random.rand(K, D).astype(np.float64)
-    B = get_bias(R, D, U).astype(np.float64)
+    U, D = R.shape
+    X = 5 * np.random.rand(U, K).astype(np.float64, copy=False)
+    Y = 5 * np.random.rand(K, D).astype(np.float64, copy=False)
+    B = get_bias(R, D, U).astype(np.float64, copy=False)
     error_log = []
-    _lambda = 0.001
+    error_cv_log = []
+    _lambda = 0.1
 
-    while steps > 0:
-        # map(lambda u, Wu: np.linalg.solve(np.dot(Y, np.dot(Wu, Y.T)) + _lambda * np.eye(K),
-        #                                     np.dot(Y, np.dot(Wu, R[u].T))).T, enumerate(X))
+    err = np.inf
+    while steps > 0 and err > 1.99:
         for u in range(U):
             Wu = np.diag(W[u])
-        X[u] = np.linalg.solve(np.dot(Y, np.dot(Wu, Y.T)) + _lambda * np.eye(K),
-                               np.dot(Y, np.dot(Wu, R[u].T))).T
+            X[u] = np.linalg.solve(np.dot(Y, np.dot(Wu, Y.T)) + _lambda * np.eye(K),
+                                   np.dot(Y, np.dot(Wu, R[u].T))).T
+
         for i in range(D):
             Wi = np.diag(W.T[i])
-        Y[:, i] = np.linalg.solve(np.dot(X.T, np.dot(Wi, X)) + _lambda * np.eye(K),
-                                  np.dot(X.T, np.dot(Wi, R[:, i])))
-        err = get_error(R, W, X, Y)
-        print(err)
+            Y[:, i] = np.linalg.solve(np.dot(X.T, np.dot(Wi, X)) + _lambda * np.eye(K),
+                                      np.dot(X.T, np.dot(Wi, R[:, i])))
+
+        err = get_error(R, W, X, Y, B)
         error_log.append(err)
+        print('Error: {}'.format(err))
+
+        if R_cv is not None:
+            err_cv = get_error(R_cv, W_cv, X, Y, B)
+            error_cv_log.append(err_cv)
+            print('CV Error: {}'.format(err_cv))
+
         steps = steps - 1
 
+    plt.plot(error_log)
+    if R_cv is not None:
+        plt.plot(error_cv_log, 'r')
+    plt.title('Learning RMSE')
+    plt.xlabel('Iteration count')
+    plt.ylabel('Error')
+    plt.show()
 
-def get_rating_matrix():
+    return X, Y, B
+
+
+def get_rating_matrix(cv=None):
     ratings = pd.read_csv('Data/ratings.csv')
-    ratings = get_reduced_ratings(ratings, 500)
+    ratings = get_reduced_ratings(ratings, 50)
     ratings = get_reduced_ratings(ratings, 500, by_movie=False)
     print(ratings['movieId'].max())
     print(ratings['userId'].max())
@@ -115,9 +138,19 @@ def get_rating_matrix():
     user_map = map_to_ind(ratings['userId'].unique())
     r = np.zeros([num_users, num_movies])
     y = np.zeros([num_users, num_movies])
-    for idx, rating in ratings.iterrows():
+    n_ratings = ratings.shape[0]
+
+    r_cv = np.zeros([num_users, num_movies])
+    y_cv = np.zeros([num_users, num_movies])
+
+    for ri, (idx, rating) in enumerate(ratings.iterrows()):
         i = user_map[int(rating['userId'])]
         j = mov_map[int(rating['movieId'])]
-        y[i][j] = 1
-        r[i][j] = rating['rating']
-    return r, y, mov_map, user_map
+        if cv is not None and float(ri) / float(n_ratings) < cv:
+            y_cv[i][j] = 1
+            r_cv[i][j] = rating['rating']
+        else:
+            y[i][j] = 1
+            r[i][j] = rating['rating']
+
+    return r, y, mov_map, user_map, r_cv, y_cv
