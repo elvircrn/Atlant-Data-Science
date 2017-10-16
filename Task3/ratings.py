@@ -75,7 +75,7 @@ def get_reduced_ratings(ratings, count, by_movie=True):
     return reduced_ratings
 
 
-def als(R, W, K=100, steps=30, R_test=None, W_test=None):
+def als(R, W, K=100, steps=3000, R_test=None, W_test=None):
     if (R_test is None) ^ (W_test is None):
         raise ValueError('R_test and W_test have to be either None or not None')
     elif R_test is not None:
@@ -111,7 +111,7 @@ def als(R, W, K=100, steps=30, R_test=None, W_test=None):
         if R_test is not None:
             err_test = get_error(R_test, W_test, X, Y, B)
             error_test_log.append(err_test)
-            print('CV Error: {}'.format(err_test))
+            print('Test Error: {}'.format(err_test))
 
         steps = steps - 1
 
@@ -126,10 +126,10 @@ def als(R, W, K=100, steps=30, R_test=None, W_test=None):
     return X, Y, B
 
 
-def get_rating_matrix(cv=None):
+def get_rating_matrix(test_pct=None):
     ratings = pd.read_csv('Data/ratings.csv')
-    ratings = get_reduced_ratings(ratings, 50)
-    ratings = get_reduced_ratings(ratings, 500, by_movie=False)
+    ratings = get_reduced_ratings(ratings, 100)
+    ratings = get_reduced_ratings(ratings, 700, by_movie=False)
     print(ratings['movieId'].max())
     print(ratings['userId'].max())
     num_movies = len(ratings['movieId'].unique())
@@ -146,7 +146,7 @@ def get_rating_matrix(cv=None):
     for ri, (idx, rating) in enumerate(ratings.iterrows()):
         i = user_map[int(rating['userId'])]
         j = mov_map[int(rating['movieId'])]
-        if cv is not None and float(ri) / float(n_ratings) < cv:
+        if test_pct is not None and float(ri) / float(n_ratings) < test_pct:
             y_test[i][j] = 1
             r_test[i][j] = rating['rating']
         else:

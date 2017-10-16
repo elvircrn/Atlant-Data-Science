@@ -65,7 +65,7 @@ def main():
     # print(mov_meta.shape)
     # prototype.approx()
 
-    r, y, mov_map, usr_map, r_test, y_test = ratings.get_rating_matrix(cv=0.05)
+    r, y, mov_map, usr_map, r_test, y_test = ratings.get_rating_matrix(test_pct=0.20)
     print(np.sum(y_test))
     X, Y, B = ratings.als(r, y, R_test=r_test, W_test=y_test)
     pd.DataFrame(X).to_csv('Predictions/X.csv')
