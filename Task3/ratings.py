@@ -75,12 +75,12 @@ def get_reduced_ratings(ratings, count, by_movie=True):
     return reduced_ratings
 
 
-def als(R, W, K=100, steps=30, R_cv=None, W_cv=None):
-    if (R_cv is None) ^ (W_cv is None):
-        raise ValueError('R_cv and W_cv have to be either None or not None')
-    elif R_cv is not None:
-        W_cv = W_cv.astype(np.float64, copy=False)
-        R_cv = R_cv.astype(np.float64, copy=False)
+def als(R, W, K=100, steps=30, R_test=None, W_test=None):
+    if (R_test is None) ^ (W_test is None):
+        raise ValueError('R_test and W_test have to be either None or not None')
+    elif R_test is not None:
+        W_test = W_test.astype(np.float64, copy=False)
+        R_test = R_test.astype(np.float64, copy=False)
 
     W = W.astype(np.float64, copy=False)
     R = R.astype(np.float64, copy=False)
@@ -89,7 +89,7 @@ def als(R, W, K=100, steps=30, R_cv=None, W_cv=None):
     Y = 5 * np.random.rand(K, D).astype(np.float64, copy=False)
     B = get_bias(R, D, U).astype(np.float64, copy=False)
     error_log = []
-    error_cv_log = []
+    error_test_log = []
     _lambda = 0.1
 
     err = np.inf
@@ -108,16 +108,16 @@ def als(R, W, K=100, steps=30, R_cv=None, W_cv=None):
         error_log.append(err)
         print('Error: {}'.format(err))
 
-        if R_cv is not None:
-            err_cv = get_error(R_cv, W_cv, X, Y, B)
-            error_cv_log.append(err_cv)
-            print('CV Error: {}'.format(err_cv))
+        if R_test is not None:
+            err_test = get_error(R_test, W_test, X, Y, B)
+            error_test_log.append(err_test)
+            print('CV Error: {}'.format(err_test))
 
         steps = steps - 1
 
     plt.plot(error_log)
-    if R_cv is not None:
-        plt.plot(error_cv_log, 'r')
+    if R_test is not None:
+        plt.plot(error_test_log, 'r')
     plt.title('Learning RMSE')
     plt.xlabel('Iteration count')
     plt.ylabel('Error')
@@ -140,17 +140,17 @@ def get_rating_matrix(cv=None):
     y = np.zeros([num_users, num_movies])
     n_ratings = ratings.shape[0]
 
-    r_cv = np.zeros([num_users, num_movies])
-    y_cv = np.zeros([num_users, num_movies])
+    r_test = np.zeros([num_users, num_movies])
+    y_test = np.zeros([num_users, num_movies])
 
     for ri, (idx, rating) in enumerate(ratings.iterrows()):
         i = user_map[int(rating['userId'])]
         j = mov_map[int(rating['movieId'])]
         if cv is not None and float(ri) / float(n_ratings) < cv:
-            y_cv[i][j] = 1
-            r_cv[i][j] = rating['rating']
+            y_test[i][j] = 1
+            r_test[i][j] = rating['rating']
         else:
             y[i][j] = 1
             r[i][j] = rating['rating']
 
-    return r, y, mov_map, user_map, r_cv, y_cv
+    return r, y, mov_map, user_map, r_test, y_test

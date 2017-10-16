@@ -65,9 +65,9 @@ def main():
     # print(mov_meta.shape)
     # prototype.approx()
 
-    r, y, mov_map, usr_map, r_cv, y_cv = ratings.get_rating_matrix(cv=0.05)
-    print(np.sum(y_cv))
-    X, Y, B = ratings.als(r, y, R_cv=r_cv, W_cv=y_cv)
+    r, y, mov_map, usr_map, r_test, y_test = ratings.get_rating_matrix(cv=0.05)
+    print(np.sum(y_test))
+    X, Y, B = ratings.als(r, y, R_test=r_test, W_test=y_test)
     pd.DataFrame(X).to_csv('Predictions/X.csv')
     pd.DataFrame(Y).to_csv('Predictions/Y.csv')
     pd.DataFrame(B).to_csv('Predictions/B.csv')
