@@ -105,11 +105,11 @@ def als(R, W, K=120, steps=3000, R_test=None, W_test=None, Y=None):
             Wu = np.diag(W[u])
             X[u] = np.linalg.solve(np.dot(Y, np.dot(Wu, Y.T)) + _lambda * np.eye(K),
                                    np.dot(Y, np.dot(Wu, R[u].T))).T
-
-        for i in range(D):
-            Wi = np.diag(W.T[i])
-            Y[:, i] = np.linalg.solve(np.dot(X.T, np.dot(Wi, X)) + _lambda * np.eye(K),
-                                      np.dot(X.T, np.dot(Wi, R[:, i])))
+        if not fix_movies:
+            for i in range(D):
+                Wi = np.diag(W.T[i])
+                Y[:, i] = np.linalg.solve(np.dot(X.T, np.dot(Wi, X)) + _lambda * np.eye(K),
+                                          np.dot(X.T, np.dot(Wi, R[:, i])))
 
         err = get_error(R, W, X, Y, B)
         error_log.append(err)

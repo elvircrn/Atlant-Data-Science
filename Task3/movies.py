@@ -72,13 +72,12 @@ def main():
     print(np.sum(y_test))
 
     mov_meta = get_mov_meta_for_ratings(mov_meta, ratings)
-
+    mov_meta = mov_meta.fillna(0)
     std_scale = StandardScaler().fit(mov_meta)
-    mov_meta = std_scale.transform(mov_meta[['gtag0']])
-    print(mov_meta)
+    mov_meta = std_scale.transform(mov_meta)
+    print('mov_meta -> {} x {}'.format(len(mov_meta), len(mov_meta[0]))) # K -> 37
 
-
-    # X, Y, B = ratings.als(r, y, R_test=r_test, W_test=y_test)
+    X, Y, B = ratings.als(r, y, R_test=r_test, W_test=y_test, Y=mov_meta.T)
     # pd.DataFrame(X).to_csv('Predictions/X.csv')
     # pd.DataFrame(Y).to_csv('Predictions/Y.csv')
     # pd.DataFrame(B).to_csv('Predictions/B.csv')
