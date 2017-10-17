@@ -6,6 +6,7 @@ import genome_scores
 import links
 import prototype
 from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
 from pandas import DataFrame
 import ratings
 
@@ -59,18 +60,28 @@ def get_mov_meta():
     return mov_meta
 
 
+def get_mov_meta_for_ratings(mov_meta, ratings):
+    return mov_meta
+
+
 def main():
-    # mov_meta = get_mov_meta()
-    # print(mov_meta)
-    # print(mov_meta.shape)
-    # prototype.approx()
+    mov_meta = get_mov_meta()
+    prototype.approx()
 
     r, y, mov_map, usr_map, r_test, y_test = ratings.get_rating_matrix(test_pct=0.20)
     print(np.sum(y_test))
-    X, Y, B = ratings.als(r, y, R_test=r_test, W_test=y_test)
-    pd.DataFrame(X).to_csv('Predictions/X.csv')
-    pd.DataFrame(Y).to_csv('Predictions/Y.csv')
-    pd.DataFrame(B).to_csv('Predictions/B.csv')
+
+    mov_meta = get_mov_meta_for_ratings(mov_meta, ratings)
+
+    std_scale = StandardScaler().fit(mov_meta)
+    mov_meta = std_scale.transform(mov_meta[['gtag0']])
+    print(mov_meta)
+
+
+    # X, Y, B = ratings.als(r, y, R_test=r_test, W_test=y_test)
+    # pd.DataFrame(X).to_csv('Predictions/X.csv')
+    # pd.DataFrame(Y).to_csv('Predictions/Y.csv')
+    # pd.DataFrame(B).to_csv('Predictions/B.csv')
     print('Finished')
 
 

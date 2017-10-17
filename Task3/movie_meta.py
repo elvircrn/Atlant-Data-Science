@@ -27,6 +27,7 @@ def del_useless_movie_meta(movie_meta):
     del movie_meta['movie_imdb_link']
     del movie_meta['movie_title']
     del movie_meta['aspect_ratio']
+    del movie_meta['plot_keywords']
     return movie_meta
 
 

@@ -75,25 +75,32 @@ def get_reduced_ratings(ratings, count, by_movie=True):
     return reduced_ratings
 
 
-def als(R, W, K=100, steps=3000, R_test=None, W_test=None):
+def als(R, W, K=120, steps=3000, R_test=None, W_test=None, Y=None):
     if (R_test is None) ^ (W_test is None):
         raise ValueError('R_test and W_test have to be either None or not None')
     elif R_test is not None:
         W_test = W_test.astype(np.float64, copy=False)
         R_test = R_test.astype(np.float64, copy=False)
 
+    fix_movies = False
+    U, D = R.shape
+
+    if Y is not None:
+        fix_movies = True
+        K = len(Y)
+    else:
+        Y = 5 * np.random.rand(K, D).astype(np.float64, copy=False)
+
     W = W.astype(np.float64, copy=False)
     R = R.astype(np.float64, copy=False)
-    U, D = R.shape
     X = 5 * np.random.rand(U, K).astype(np.float64, copy=False)
-    Y = 5 * np.random.rand(K, D).astype(np.float64, copy=False)
     B = get_bias(R, D, U).astype(np.float64, copy=False)
     error_log = []
     error_test_log = []
-    _lambda = 0.1
+    _lambda = 0.05
 
     err = np.inf
-    while steps > 0 and err > 1.99:
+    while steps > 0 and err > 0.002:
         for u in range(U):
             Wu = np.diag(W[u])
             X[u] = np.linalg.solve(np.dot(Y, np.dot(Wu, Y.T)) + _lambda * np.eye(K),
@@ -129,7 +136,7 @@ def als(R, W, K=100, steps=3000, R_test=None, W_test=None):
 def get_rating_matrix(test_pct=None):
     ratings = pd.read_csv('Data/ratings.csv')
     ratings = get_reduced_ratings(ratings, 100)
-    ratings = get_reduced_ratings(ratings, 700, by_movie=False)
+    ratings = get_reduced_ratings(ratings, 10000, by_movie=False)
     print(ratings['movieId'].max())
     print(ratings['userId'].max())
     num_movies = len(ratings['movieId'].unique())
