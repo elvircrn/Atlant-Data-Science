@@ -63,9 +63,10 @@ def get_bias(R, D, U):
 
 def get_error(R, W, X, Y, B):
     return np.sum((W * (R - np.dot(X, Y)) ** 2))
+    # return np.sum((W * (R - B - np.dot(X, Y)) ** 2))
 
 
-def get_reduced_ratings(ratings, count, by_movie=True):
+def reduce_ratings(ratings, count, by_movie=True):
     column = 'movieId' if by_movie else 'userId'
     entity_grps = ratings.groupby(by=column, sort=True).size().reset_index(name='Size')
     entity_grps = DataFrame.sort_values(entity_grps, by='Size', ascending=False)['Size']
@@ -87,7 +88,7 @@ def als(R, W, K=120, steps=3000, R_test=None, W_test=None, Y=None):
 
     if Y is not None:
         fix_movies = True
-        K = len(Y)
+        K, _ = Y.shape
     else:
         Y = 5 * np.random.rand(K, D).astype(np.float64, copy=False)
 
@@ -132,13 +133,15 @@ def als(R, W, K=120, steps=3000, R_test=None, W_test=None, Y=None):
 
     return X, Y, B
 
+def del_ratings_without_meta(ratings, mov_ids):
+    return ratings[ratings['movieId'].isin(mov_ids)]
 
-def get_rating_matrix(test_pct=None):
+
+def get_rating_matrix(test_pct=None, mov_ids=None):
     ratings = pd.read_csv('Data/ratings.csv')
-    ratings = get_reduced_ratings(ratings, 100)
-    ratings = get_reduced_ratings(ratings, 10000, by_movie=False)
-    print(ratings['movieId'].max())
-    print(ratings['userId'].max())
+    ratings = del_ratings_without_meta(ratings, mov_ids)
+    ratings = reduce_ratings(ratings, 500)
+    ratings = reduce_ratings(ratings, 1000, by_movie=False)
     num_movies = len(ratings['movieId'].unique())
     num_users = len(ratings['userId'].unique())
     mov_map = map_to_ind(ratings['movieId'].unique())
@@ -153,6 +156,10 @@ def get_rating_matrix(test_pct=None):
     for ri, (idx, rating) in enumerate(ratings.iterrows()):
         i = user_map[int(rating['userId'])]
         j = mov_map[int(rating['movieId'])]
+
+        if mov_ids is not None and j not in mov_ids:
+            continue
+
         if test_pct is not None and float(ri) / float(n_ratings) < test_pct:
             y_test[i][j] = 1
             r_test[i][j] = rating['rating']
@@ -160,4 +167,4 @@ def get_rating_matrix(test_pct=None):
             y[i][j] = 1
             r[i][j] = rating['rating']
 
-    return r, y, mov_map, user_map, r_test, y_test
+    return r, y, mov_map, user_map, r_test, y_test, ratings

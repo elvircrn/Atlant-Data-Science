@@ -2,6 +2,7 @@ import numpy as np
 from preprocessing import *
 import re
 from functools import reduce
+from sklearn.preprocessing import StandardScaler
 
 
 def remove_imdb_prefix(link):
@@ -93,6 +94,17 @@ def map_plot_keywords(movie_meta):
     for i in range(5):
         movie_meta['plot_keyword' + str(i)] = get_plot(movie_meta['plot_keywords'], tag_dict, i)
     return movie_meta
+
+
+def del_mov_ids(mov_meta):
+    del mov_meta['movieId']
+    del mov_meta['tmdbId']
+    del mov_meta['imdbId']
+    return mov_meta
+
+
+def del_duplicates(mov_meta):
+    return mov_meta.drop_duplicates(subset=['movieId'])
 
 
 def preprocess(movie_meta):

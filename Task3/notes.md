@@ -12,10 +12,16 @@ Links:
 [SVD & PMF Ppt](http://dparra.sitios.ing.uc.cl/classes/recsys-2015-2/student_ppts/CRojas_SVDpp-PMF.pdf)
 [SVD vs SVD++](https://www.quora.com/Whats-the-difference-between-SVD-and-SVD++)
 [Netflix clustering](https://rpubs.com/nishantsbi/93582)
+[ALS](https://bugra.github.io/work/notes/2014-04-19/alternating-least-squares-method-for-collaborative-filtering/)
 # Dataset Preprocessing and Analysis 
 
 Max movie id: 176279
 Max user id: 270896
+
+normalize:
+movieId
+gtags
+director name
 
 ## Steps:
 
