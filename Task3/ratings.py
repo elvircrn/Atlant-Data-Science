@@ -61,9 +61,12 @@ def get_bias(R, D, U):
     return B
 
 
-def get_error(R, W, X, Y, B):
+def get_error(R, W, X, Y):
     return np.sum((W * (R - np.dot(X, Y)) ** 2))
-    # return np.sum((W * (R - B - np.dot(X, Y)) ** 2))
+
+
+def get_biased_error(R, W, X, Y, B):
+    return np.sum((W * (R - B - np.dot(X, Y)) ** 2))
 
 
 def reduce_ratings(ratings, count, by_movie=True):
@@ -76,7 +79,7 @@ def reduce_ratings(ratings, count, by_movie=True):
     return reduced_ratings
 
 
-def als(R, W, K=120, steps=3000, R_test=None, W_test=None, Y=None):
+def biased_als(R, W, K=120, steps=3000, R_test=None, W_test=None, Y=None, biased=False):
     if (R_test is None) ^ (W_test is None):
         raise ValueError('R_test and W_test have to be either None or not None')
     elif R_test is not None:
@@ -100,6 +103,16 @@ def als(R, W, K=120, steps=3000, R_test=None, W_test=None, Y=None):
     error_test_log = []
     _lambda = 0.05
 
+    if biased:
+        R = R - B
+
+    if fix_movies:
+        for u in range(U):
+            Wu = np.diag(W[u])
+            X[u] = np.linalg.solve(np.dot(Y, np.dot(Wu, Y.T)) + _lambda * np.eye(K),
+                                   np.dot(Y, np.dot(Wu, R[u].T))).T
+            err = get_biased_error(R, W, X, Y, B) if biased else get_error(R, W, X, Y)
+
     err = np.inf
     while steps > 0 and err > 0.002:
         for u in range(U):
@@ -112,12 +125,12 @@ def als(R, W, K=120, steps=3000, R_test=None, W_test=None, Y=None):
                 Y[:, i] = np.linalg.solve(np.dot(X.T, np.dot(Wi, X)) + _lambda * np.eye(K),
                                           np.dot(X.T, np.dot(Wi, R[:, i])))
 
-        err = get_error(R, W, X, Y, B)
+        err = get_biased_error(R, W, X, Y, B) if biased else get_error(R, W, X, Y)
         error_log.append(err)
         print('Error: {}'.format(err))
 
         if R_test is not None:
-            err_test = get_error(R_test, W_test, X, Y, B)
+            err_test = get_biased_error(R_test, W_test, X, Y, B) if biased else get_error(R_test, W_test, X, Y)
             error_test_log.append(err_test)
             print('Test Error: {}'.format(err_test))
 
@@ -132,6 +145,75 @@ def als(R, W, K=120, steps=3000, R_test=None, W_test=None, Y=None):
     plt.show()
 
     return X, Y, B
+
+
+def als(R, W, K=120, steps=3000, R_test=None, W_test=None, Y=None, biased=False):
+    if (R_test is None) ^ (W_test is None):
+        raise ValueError('R_test and W_test have to be either None or not None')
+    elif R_test is not None:
+        W_test = W_test.astype(np.float64, copy=False)
+        R_test = R_test.astype(np.float64, copy=False)
+
+    fix_movies = False
+    U, D = R.shape
+
+    if Y is not None:
+        fix_movies = True
+        K, _ = Y.shape
+    else:
+        Y = 5 * np.random.rand(K, D).astype(np.float64, copy=False)
+
+    W = W.astype(np.float64, copy=False)
+    R = R.astype(np.float64, copy=False)
+    X = 5 * np.random.rand(U, K).astype(np.float64, copy=False)
+    B = get_bias(R, D, U).astype(np.float64, copy=False)
+    error_log = []
+    error_test_log = []
+    _lambda = 0.05
+
+    if biased:
+        R = R - B
+
+    if fix_movies:
+        for u in range(U):
+            Wu = np.diag(W[u])
+            X[u] = np.linalg.solve(np.dot(Y, np.dot(Wu, Y.T)) + _lambda * np.eye(K),
+                                   np.dot(Y, np.dot(Wu, R[u].T))).T
+            err = get_biased_error(R, W, X, Y, B) if biased else get_error(R, W, X, Y)
+
+    err = np.inf
+    while steps > 0 and err > 0.002:
+        for u in range(U):
+            Wu = np.diag(W[u])
+            X[u] = np.linalg.solve(np.dot(Y, np.dot(Wu, Y.T)) + _lambda * np.eye(K),
+                                   np.dot(Y, np.dot(Wu, R[u].T))).T
+        if not fix_movies:
+            for i in range(D):
+                Wi = np.diag(W.T[i])
+                Y[:, i] = np.linalg.solve(np.dot(X.T, np.dot(Wi, X)) + _lambda * np.eye(K),
+                                          np.dot(X.T, np.dot(Wi, R[:, i])))
+
+        err = get_biased_error(R, W, X, Y, B) if biased else get_error(R, W, X, Y)
+        error_log.append(err)
+        print('Error: {}'.format(err))
+
+        if R_test is not None:
+            err_test = get_biased_error(R_test, W_test, X, Y, B) if biased else get_error(R_test, W_test, X, Y)
+            error_test_log.append(err_test)
+            print('Test Error: {}'.format(err_test))
+
+        steps = steps - 1
+
+    plt.plot(error_log)
+    if R_test is not None:
+        plt.plot(error_test_log, 'r')
+    plt.title('Learning RMSE')
+    plt.xlabel('Iteration count')
+    plt.ylabel('Error')
+    plt.show()
+
+    return X, Y, B
+
 
 def del_ratings_without_meta(ratings, mov_ids):
     return ratings[ratings['movieId'].isin(mov_ids)]
