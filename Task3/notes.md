@@ -1,4 +1,3 @@
-
 Links:
 [Model-based CF](http://www.cs.carleton.edu/cs_comps/0607/recommend/recommender/modelbased.html)
 [One-Hot vs integer](https://machinelearningmastery.com/why-one-hot-encode-data-in-machine-learning/)
@@ -13,6 +12,7 @@ Links:
 [SVD vs SVD++](https://www.quora.com/Whats-the-difference-between-SVD-and-SVD++)
 [Netflix clustering](https://rpubs.com/nishantsbi/93582)
 [ALS](https://bugra.github.io/work/notes/2014-04-19/alternating-least-squares-method-for-collaborative-filtering/)
+
 # Dataset Preprocessing and Analysis 
 
 Max movie id: 176279

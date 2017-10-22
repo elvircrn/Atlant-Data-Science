@@ -62,8 +62,14 @@ def main():
     print('mov_meta -> {} x {}'.format(*mov_meta.shape))
     print('r -> {} x {}'.format(*r.shape))
     mov_meta = z_standard(mov_meta)
-    X, Y, B = ratings.als(r, y, R_test=r_test, W_test=y_test)
-    X, Y, B = ratings.als(r, y, R_test=r_test, W_test=y_test, Y=mov_meta.T)
+
+
+    X, Y, B = ratings.biased_als(r, y, R_test=r_test, W_test=y_test)
+    # X, Y, B = ratings.als(r, y, R_test=r_test, W_test=y_test)
+
+
+
+    # X, Y, B = ratings.als(r, y, R_test=r_test, W_test=y_test, Y=mov_meta.T)
     # pd.DataFrame(X).to_csv('Predictions/X.csv')
     # pd.DataFrame(Y).to_csv('Predictions/Y.csv')
     # pd.DataFrame(B).to_csv('Predictions/B.csv')

@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from preprocessing import map_to_ind
 
 from pandas import DataFrame
+from numba import autojit, prange, jit
 
 
 def avg(R):
@@ -79,7 +80,8 @@ def reduce_ratings(ratings, count, by_movie=True):
     return reduced_ratings
 
 
-def biased_als(R, W, K=120, steps=3000, R_test=None, W_test=None, Y=None, biased=False):
+@jit
+def biased_als(R, W, K=120, steps=3000, R_test=None, W_test=None, Y=None):
     if (R_test is None) ^ (W_test is None):
         raise ValueError('R_test and W_test have to be either None or not None')
     elif R_test is not None:
@@ -96,6 +98,8 @@ def biased_als(R, W, K=120, steps=3000, R_test=None, W_test=None, Y=None, biased
         Y = 5 * np.random.rand(K, D).astype(np.float64, copy=False)
 
     W = W.astype(np.float64, copy=False)
+    # W = np.vstack((np.ones(W.shape[1]), W))
+    # W = np.hstack((np.ones((W.shape[0], 1)), W))
     R = R.astype(np.float64, copy=False)
     X = 5 * np.random.rand(U, K).astype(np.float64, copy=False)
     B = get_bias(R, D, U).astype(np.float64, copy=False)
@@ -103,36 +107,50 @@ def biased_als(R, W, K=120, steps=3000, R_test=None, W_test=None, Y=None, biased
     error_test_log = []
     _lambda = 0.05
 
-    if biased:
-        R = R - B
+    R = R - B
 
-    if fix_movies:
-        for u in range(U):
-            Wu = np.diag(W[u])
-            X[u] = np.linalg.solve(np.dot(Y, np.dot(Wu, Y.T)) + _lambda * np.eye(K),
-                                   np.dot(Y, np.dot(Wu, R[u].T))).T
-            err = get_biased_error(R, W, X, Y, B) if biased else get_error(R, W, X, Y)
+    beta = np.random.rand(U, 1)
+    gamma = np.random.rand(1, D)
 
     err = np.inf
     while steps > 0 and err > 0.002:
-        for u in range(U):
+        _X = np.hstack((np.ones((U, 1)), X))
+        _Y = np.vstack((gamma, Y))
+        for i in prange(D):
+            # Wi = np.diag(np.vstack((1, W.T[i])))
+            Wi = np.diag(W.T[i])
+            L = np.dot(_X.T, np.dot(Wi, _X)) + _lambda * np.eye(K + 1)
+            H = np.dot(_X.T, np.dot(Wi, R[:, i]))
+            _Y[:, i] = np.linalg.solve(L, H)
+
+        gamma = _Y[0]
+
+        _Y[0] = np.ones((1, Y.shape[1]))
+        _X[:, [0]] = beta
+
+        for u in prange(U):
             Wu = np.diag(W[u])
-            X[u] = np.linalg.solve(np.dot(Y, np.dot(Wu, Y.T)) + _lambda * np.eye(K),
-                                   np.dot(Y, np.dot(Wu, R[u].T))).T
-        if not fix_movies:
-            for i in range(D):
-                Wi = np.diag(W.T[i])
-                Y[:, i] = np.linalg.solve(np.dot(X.T, np.dot(Wi, X)) + _lambda * np.eye(K),
-                                          np.dot(X.T, np.dot(Wi, R[:, i])))
+            _X[u] = np.linalg.solve(np.dot(_Y, np.dot(Wu, _Y.T)) + _lambda * np.eye(K + 1),
+                                    np.dot(_Y, np.dot(Wu, R[u].T))).T
 
-        err = get_biased_error(R, W, X, Y, B) if biased else get_error(R, W, X, Y)
-        error_log.append(err)
-        print('Error: {}'.format(err))
+        beta = _X[:, [0]]
+        X = _X[:, 1:]
+        Y = _Y[1:, :]
 
-        if R_test is not None:
-            err_test = get_biased_error(R_test, W_test, X, Y, B) if biased else get_error(R_test, W_test, X, Y)
-            error_test_log.append(err_test)
-            print('Test Error: {}'.format(err_test))
+        if steps % 20 == 0:
+            for i in range(0, U):
+                for j in range(0, D):
+                    B[i][j] = gamma[j] + beta[i][0]
+
+            err = get_biased_error(R, W, X, Y, B)
+            error_log.append(err)
+            print('Error: {}'.format(err))
+
+            if R_test is not None:
+                err_test = 0
+                err_test = get_biased_error(R_test, W_test, X, Y, B)
+                error_test_log.append(err_test)
+                print('Test Error: {}'.format(err_test))
 
         steps = steps - 1
 
@@ -147,7 +165,7 @@ def biased_als(R, W, K=120, steps=3000, R_test=None, W_test=None, Y=None, biased
     return X, Y, B
 
 
-def als(R, W, K=120, steps=3000, R_test=None, W_test=None, Y=None, biased=False):
+def als(R, W, K=150, steps=3000, R_test=None, W_test=None, Y=None, biased=False):
     if (R_test is None) ^ (W_test is None):
         raise ValueError('R_test and W_test have to be either None or not None')
     elif R_test is not None:
@@ -222,8 +240,8 @@ def del_ratings_without_meta(ratings, mov_ids):
 def get_rating_matrix(test_pct=None, mov_ids=None):
     ratings = pd.read_csv('Data/ratings.csv')
     ratings = del_ratings_without_meta(ratings, mov_ids)
-    ratings = reduce_ratings(ratings, 500)
-    ratings = reduce_ratings(ratings, 1000, by_movie=False)
+    ratings = reduce_ratings(ratings, 50)
+    ratings = reduce_ratings(ratings, 3000, by_movie=False)
     num_movies = len(ratings['movieId'].unique())
     num_users = len(ratings['userId'].unique())
     mov_map = map_to_ind(ratings['movieId'].unique())
