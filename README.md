@@ -140,18 +140,31 @@ In 2009, Netflix offered 1 million dollars to the first team that managed to imp
 Given data about each user’s movie preference and given each movie’s metadata(plot keywords, budget, director name, etc.), create a machine learning model that predicts each user’s movie preference.
 
 ## Useful Links
+
 [Model-based CF](http://www.cs.carleton.edu/cs_comps/0607/recommend/recommender/modelbased.html)
+
 [One-Hot vs integer](https://machinelearningmastery.com/why-one-hot-encode-data-in-machine-learning/)
+
 [Matrix Factorization](http://www.quuxlabs.com/blog/2010/09/matrix-factorization-a-simple-tutorial-and-implementation-in-python/)
+
 [Wikia](http://stat.wikia.com/wiki/Matrix_factorization)
+
 [C++ SVD RS](https://github.com/timnugent/svd-recommend)
+
 [Another C++ RS](https://github.com/yixuan/recosystem)
+
 [SVD++](http://www.recsyswiki.com/wiki/SVD%2B%2B)
+
 [Basic Clustering Model](http://cs229.stanford.edu/proj2013/Bystrom-MovieRecommendationsFromUserRatings.pdf)
+
 [Blog](http://sifter.org/~simon/journal/20061211.html)
+
 [SVD & PMF Ppt](http://dparra.sitios.ing.uc.cl/classes/recsys-2015-2/student_ppts/CRojas_SVDpp-PMF.pdf)
+
 [SVD vs SVD++](https://www.quora.com/Whats-the-difference-between-SVD-and-SVD++)
+
 [Netflix clustering](https://rpubs.com/nishantsbi/93582)
+
 [ALS](https://bugra.github.io/work/notes/2014-04-19/alternating-least-squares-method-for-collaborative-filtering/)
 
 ## The Algorithm
@@ -348,6 +361,10 @@ na -> 0
 ![alt text](Task3/Documentation/learn.png)
 
 Although I am sure that the choice of algorithm was the right one, the grim-looking flat red line indicates the presence of overfitting, that was most probably caused by the relatively small size of the dataset.
+
+# Conclusion
+
+The problem defnitely turned out to be more difficult than I initialy expected it to be. To get rid of overfitting, one probably has to put more work into parameter tuning and dataset selection and training.
 
 
 
