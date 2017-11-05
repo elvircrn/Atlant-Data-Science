@@ -2,6 +2,7 @@
 Data/
 ReducedData/
 Predictions/
+Demo/
 
 # C++
 *.exe

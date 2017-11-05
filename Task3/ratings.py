@@ -5,6 +5,8 @@ from preprocessing import map_to_ind
 
 from pandas import DataFrame
 from numba import autojit, prange, jit
+import concurrent.futures
+
 
 
 def avg(R):
@@ -80,8 +82,7 @@ def reduce_ratings(ratings, count, by_movie=True):
     return reduced_ratings
 
 
-@jit
-def biased_als(R, W, K=120, steps=3000, R_test=None, W_test=None, Y=None):
+def biased_als(R, W, K=30, steps=220, R_test=None, W_test=None, Y=None):
     if (R_test is None) ^ (W_test is None):
         raise ValueError('R_test and W_test have to be either None or not None')
     elif R_test is not None:
@@ -116,41 +117,33 @@ def biased_als(R, W, K=120, steps=3000, R_test=None, W_test=None, Y=None):
     while steps > 0 and err > 0.002:
         _X = np.hstack((np.ones((U, 1)), X))
         _Y = np.vstack((gamma, Y))
-        for i in prange(D):
-            # Wi = np.diag(np.vstack((1, W.T[i])))
-            Wi = np.diag(W.T[i])
-            L = np.dot(_X.T, np.dot(Wi, _X)) + _lambda * np.eye(K + 1)
-            H = np.dot(_X.T, np.dot(Wi, R[:, i]))
-            _Y[:, i] = np.linalg.solve(L, H)
+
+        for i in range(D):
+            _Y[:, i] = findY(K, R, W, _X, _lambda, i)
 
         gamma = _Y[0]
 
         _Y[0] = np.ones((1, Y.shape[1]))
         _X[:, [0]] = beta
 
-        for u in prange(U):
-            Wu = np.diag(W[u])
-            _X[u] = np.linalg.solve(np.dot(_Y, np.dot(Wu, _Y.T)) + _lambda * np.eye(K + 1),
-                                    np.dot(_Y, np.dot(Wu, R[u].T))).T
+        for u in range(U):
+            _X[u] = findX(K, R, W, _X, _Y, _lambda, u)
 
         beta = _X[:, [0]]
         X = _X[:, 1:]
         Y = _Y[1:, :]
 
-        if steps % 20 == 0:
-            for i in range(0, U):
-                for j in range(0, D):
-                    B[i][j] = gamma[j] + beta[i][0]
-
-            err = get_biased_error(R, W, X, Y, B)
-            error_log.append(err)
-            print('Error: {}'.format(err))
-
-            if R_test is not None:
-                err_test = 0
-                err_test = get_biased_error(R_test, W_test, X, Y, B)
-                error_test_log.append(err_test)
-                print('Test Error: {}'.format(err_test))
+        for i in range(0, U):
+            for j in range(0, D):
+                B[i][j] = gamma[j] + beta[i][0]
+        err = get_biased_error(R, W, X, Y, B)
+        error_log.append(err)
+        print('Error: {}'.format(err))
+        if R_test is not None:
+            err_test = 0
+            err_test = get_biased_error(R_test, W_test, X, Y, B)
+            error_test_log.append(err_test)
+            print('Test Error: {}'.format(err_test))
 
         steps = steps - 1
 
@@ -165,7 +158,19 @@ def biased_als(R, W, K=120, steps=3000, R_test=None, W_test=None, Y=None):
     return X, Y, B
 
 
-def als(R, W, K=150, steps=3000, R_test=None, W_test=None, Y=None, biased=False):
+def findX(K, R, W, _X, _Y, _lambda, u):
+    Wu = np.diag(W[u])
+    return np.linalg.solve(np.dot(_Y, np.dot(Wu, _Y.T)) + _lambda * np.eye(K + 1),
+                           np.dot(_Y, np.dot(Wu, R[u].T))).T
+
+
+def findY(K, R, W, _X, _lambda, i):
+    Wi = np.diag(W.T[i])
+    return np.linalg.solve(np.dot(_X.T, np.dot(Wi, _X)) + _lambda * np.eye(K + 1),
+                           np.dot(_X.T, np.dot(Wi, R[:, i])))
+
+
+def als(R, W, K=100, steps=300, R_test=None, W_test=None, Y=None, biased=False):
     if (R_test is None) ^ (W_test is None):
         raise ValueError('R_test and W_test have to be either None or not None')
     elif R_test is not None:
@@ -240,7 +245,7 @@ def del_ratings_without_meta(ratings, mov_ids):
 def get_rating_matrix(test_pct=None, mov_ids=None):
     ratings = pd.read_csv('Data/ratings.csv')
     ratings = del_ratings_without_meta(ratings, mov_ids)
-    ratings = reduce_ratings(ratings, 50)
+    ratings = reduce_ratings(ratings, 500)
     ratings = reduce_ratings(ratings, 3000, by_movie=False)
     num_movies = len(ratings['movieId'].unique())
     num_users = len(ratings['userId'].unique())
@@ -257,7 +262,7 @@ def get_rating_matrix(test_pct=None, mov_ids=None):
         i = user_map[int(rating['userId'])]
         j = mov_map[int(rating['movieId'])]
 
-        if mov_ids is not None and j not in mov_ids:
+        if int(rating['movieId']) not in mov_ids:
             continue
 
         if test_pct is not None and float(ri) / float(n_ratings) < test_pct:

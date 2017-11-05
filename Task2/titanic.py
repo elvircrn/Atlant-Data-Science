@@ -143,6 +143,7 @@ def extract(data):
     data['Survived'] = data['Survived'] + 1
     label = data['Survived'].as_matrix()
     del data['Survived']
+    print(data)
     features = data.as_matrix()
     return features, label
 
@@ -197,14 +198,15 @@ def train_bayes(features, labels):
 
 def run():
     features, labels = get_data('Data/train.csv')
-    # generate_predictions(features, labels)
-    plot_features(features, labels)
+    # np.savetxt('Data/features.csv', features, delimiter=',')
+    # np.savetxt('Data/labels.csv', labels, delimiter=',')
+    generate_predictions(features, labels)
+    # plot_features(features, labels)
 
 
 def generate_predictions(features, labels):
     print('Features:')
     print(features)
-
     f, truth = get_test_data('Data/test.csv')
     truth = truth - 1
 
@@ -216,11 +218,15 @@ def generate_predictions(features, labels):
     predictions = [model.predict(f) - 1 for key, model in models.items()]
     pred_prob = [model.predict_proba(f) for key, model in models.items()]
 
+    np.savetxt('Data/predictions.csv', features, delimiter=',')
+    np.savetxt('Data/pred_prob.csv', labels, delimiter=',')
+
     print('SVM w/ Gaussian kernel: ', accuracy_score(truth, predictions[0]))
     print('LogReg accuracy: ', accuracy_score(truth, predictions[1]))
     print('Decision tree accuracy: ', accuracy_score(truth, predictions[2]))
     print('Naive Bayes accuracy: ', accuracy_score(truth, predictions[3]))
 
+    print('Series\n {}'.format(pd.Series({'Prediction': predictions[0]})))
     print('Truth:              ', truth)
     print('SVM pred:           ', predictions[0])
     print('LogReg pred:        ', predictions[1])
