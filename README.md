@@ -154,6 +154,22 @@ Given data about each user’s movie preference and given each movie’s metadata(pl
 [Netflix clustering](https://rpubs.com/nishantsbi/93582)
 [ALS](https://bugra.github.io/work/notes/2014-04-19/alternating-least-squares-method-for-collaborative-filtering/)
 
+## The Algorithm
+
+### Matrix factorization
+After spending some time on researching on algorithms, I came to the conclusion that most state-of-the-art recommendation systems use matrix factorization techniques at some point in their pipeline. 
+
+The idea is to give each user and movie a feature and then obtain the predicted rating after multiplying the two vectors. The way we obtain the two vectors is by minimizing the following error function:
+
+![alt text](Task3/Documentation/formula.jpg)
+
+where \mu is the user-item bias, the purpose of which is explained in the following section.
+
+### The Role of User-Item Bias
+If a user is cynical, and gives low movie ratings(1 - 2) to most movies that he watches, then that must mean that he really really likes the few movies that he gives a high rating(4-5).
+
+Furthermore, the algorithm should also be weary of users that give low ratings to movies that do well in terms of ratings(such as The Dark Knight).
+
 
 ## Notes Made During Preprocessing
 
@@ -325,6 +341,14 @@ delete
 
 ### movie facebook likes
 na -> 0
+
+
+## The Results
+
+![alt text](Task3/Documentation/learn.png)
+
+Although I am sure that the choice of algorithm was the right one, the grim-looking flat red line indicates the presence of overfitting, that was most probably caused by the relatively small size of the dataset.
+
 
 
 
