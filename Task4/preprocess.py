@@ -1,6 +1,8 @@
 import pandas as pd
 import numpy as np
 
+from helpers import perc_split
+
 
 def to_vector(pixels):
     return np.fromstring(pixels, dtype=int, sep=' ')
@@ -21,7 +23,13 @@ def majority_voting(labels, n_classes):
     return labels
 
 
-def get_train():
+def split(input, labels):
+    set_distribution = [0.4, 0.3, 0.3]
+    datasets = list(zip(perc_split(input, set_distribution), perc_split(labels, set_distribution)))
+    return datasets
+
+
+def get_data():
     fer2013 = pd.read_csv('Data/FERPlus/fer2013.csv')
     fer2013new = pd.read_csv('Data/FERPlus/fer2013new.csv')
 
@@ -43,7 +51,7 @@ def get_train():
     
     labels = majority_voting(labels, 9)
 
-    return input, labels
+    return split(input, labels)
 
 
 def get_quick_train():

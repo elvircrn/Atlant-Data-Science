@@ -1,7 +1,11 @@
 import tensorflow as tf
 import numpy as np
-from facedetect import detect
-from preprocess import get_train
+
+import data
+from preprocess import get_data
+from helpers import perc_split
+
+from tensorflow.contrib.learn.python.learn import monitors as monitor_lib
 
 
 # yellow  - conv
@@ -14,6 +18,9 @@ def cnn_model_fn(features, labels, mode):
     reuse = None
     dropout = 0.5
     n_classes = 9
+    
+    is_training = True if mode == tf.estimator.ModeKeys.TRAIN else False
+    
     with tf.variable_scope('ConvNet', reuse=reuse):
         x = tf.reshape(features['images'], shape=[-1, 48, 48, 1])
         conv1 = tf.layers.conv2d(x, 64, 3, activation=tf.nn.relu)
@@ -84,22 +91,64 @@ def cnn_model_fn(features, labels, mode):
 def predict(image):
     input_fn = tf.estimator.inputs.numpy_input_fn(x={'images': np.array(
       [image], dtype=np.float32)}, num_epochs=1, shuffle=False)
-    model = tf.estimator.Estimator(cnn_model_fn, model_dir='C:\\Users\\elvircrn\\Documents\\codes2\\Atlant Data Science\\Project1\\Atlant-Data-Science\\Task4\\Data\\log')
+    model = tf.estimator.Estimator(cnn_model_fn, model_dir=data.MODEL_DIR)
     prediction = list(model.predict(input_fn))
 
     return prediction[0]['classes']
 
 
+def get_validation_metrics():
+
+
+
+
+    validation_metrics = {
+        "accuracy":
+            tf.contrib.learn.MetricSpec(
+                metric_fn=tf.contrib.metrics.streaming_accuracy,
+                prediction_key=tf.contrib.learn.prediction_key.PredictionKey.CLASSES),
+        "precision":
+            tf.contrib.learn.MetricSpec(
+                metric_fn=tf.contrib.metrics.streaming_precision,
+                prediction_key=tf.contrib.learn.prediction_key.PredictionKey.CLASSES),
+        "recall":
+            tf.contrib.learn.MetricSpec(
+                metric_fn=tf.contrib.metrics.streaming_recall,
+                prediction_key=tf.contrib.learn.prediction_key.PredictionKey.CLASSES)
+    }
+
+    return validation_metrics
+
+
+def get_validation_monitor(test_data, test_labels, validation_metrics):
+    validation_monitor = tf.contrib.learn.monitors.ValidationMonitor(
+        test_data,
+        test_labels,
+        every_n_steps=50,
+        metrics=validation_metrics)
+
+    return validation_monitor
+
+
 def launch_training():
-    train, labels = get_train()
-    tr = tf.convert_to_tensor(train, dtype=tf.float32)
-    lb = tf.convert_to_tensor(labels, dtype=tf.float32)
+    TRAINING_SET = 0
+    TEST_SET = 1
+    VALIDATION_SET = 2
+
+    DATA = 0
+    LABELS = 1
+
+    datasets = get_data()
+
+    tr = tf.convert_to_tensor(datasets[TRAINING_SET][DATA], dtype=tf.float32)
+        # Add ops to save and restore all the variables.
+    lb = tf.convert_to_tensor(datasets[TRAINING_SET][LABELS], dtype=tf.float32)
 
     batch_size = 20
     num_steps = 3000
 
     input_fn = tf.estimator.inputs.numpy_input_fn(
-        x={'images': train}, y=labels,
+        x={'images': datasets[TRAINING_SET][DATA]}, y=datasets[TRAINING_SET][LABELS],
         batch_size=batch_size, num_epochs=None, shuffle=True)
     # Train the Model
     init = tf.global_variables_initializer()
@@ -108,6 +157,11 @@ def launch_training():
     with tf.Session() as sess:
         sess.run(init)
         model = tf.estimator.Estimator(cnn_model_fn,
-                                       model_dir='C:\\Users\\elvircrn\\Documents\\codes2\\Atlant Data Science\\Project1\\Atlant-Data-Science\\Task4\\Data\\log')
-        model.train(input_fn, steps=num_steps)
-        # Add ops to save and restore all the variables.
+                                       model_dir=data.MODEL_DIR)
+
+        validation_monitor = get_validation_monitor(datasets[TEST_SET][DATA], datasets[TEST_SET][LABELS],
+                                                    get_validation_metrics())
+
+        hooks = monitor_lib.replace_monitors_with_hooks([validation_monitor], model)
+        model.train(input_fn, steps=num_steps, hooks=hooks)
+
