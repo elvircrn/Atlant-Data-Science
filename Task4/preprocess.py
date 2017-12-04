@@ -29,6 +29,14 @@ def split(input, labels):
     return datasets
 
 
+def delete_unknown(data):
+    ferplus = ferplus[ferplus['NF'] != 10]
+    del ferplus['NF']
+    del ferplus['unknown']
+    return data
+
+
+
 def get_data():
     fer2013 = pd.read_csv('Data/FERPlus/fer2013.csv')
     fer2013new = pd.read_csv('Data/FERPlus/fer2013new.csv')
@@ -39,6 +47,8 @@ def get_data():
     ferplus = pd.concat([fer2013, fer2013new], axis=1)
 
     ferplus = ferplus.dropna()
+
+    ferplus = delete_unknown(ferplus)
 
     input = ferplus['pixels'].apply(to_vector).values
     input = np.concatenate(input).reshape((input.size, input[0].size)).astype(np.float32)
