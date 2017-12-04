@@ -18,9 +18,9 @@ def cnn_model_fn(features, labels, mode):
     reuse = None
     dropout = 0.5
     n_classes = 9
-    
-    is_training = True if mode == tf.estimator.ModeKeys.TRAIN else False
-    
+
+    is_training = (mode == tf.estimator.ModeKeys.TRAIN)
+
     with tf.variable_scope('ConvNet', reuse=reuse):
         x = tf.reshape(features['images'], shape=[-1, 48, 48, 1])
         conv1 = tf.layers.conv2d(x, 64, 3, activation=tf.nn.relu)
@@ -49,7 +49,7 @@ def cnn_model_fn(features, labels, mode):
         # drop6 = tf.layers.dropout(fc2, rate=dropout, training=is_training)
         fc3 = tf.contrib.layers.flatten(drop3)
         # fc3 = tf.layers.dense(fc3, 9)
-        out = tf.layers.dense(fc3, n_classes)
+        out = tf.layers.dense(fc3, units=n_classes)
 
         predictions = {
             # Generate predictions (for PREDICT and EVAL mode)
@@ -62,35 +62,27 @@ def cnn_model_fn(features, labels, mode):
         if mode == tf.estimator.ModeKeys.PREDICT:
             return tf.estimator.EstimatorSpec(mode=tf.estimator.ModeKeys.PREDICT, predictions=predictions)
 
-        mode = tf.estimator.ModeKeys.TRAIN
-
         # Calculate Loss (for both TRAIN and EVAL modes)
-        onehot_labels = tf.one_hot(indices=tf.cast(labels, tf.int32), depth=9)
-        # loss = tf.losses.softmax_cross_entropy(
-        # onehot_labels=onehot_labels, logits=predictions['probabilities'])
+        # onehot_labels = tf.one_hot(indices=tf.cast(labels, tf.int32), depth=9)
         loss = tf.losses.softmax_cross_entropy(
-            onehot_labels=labels, logits=predictions['probabilities'])
+            onehot_labels=labels, logits=out)
 
-        # Configure the Training Op (for TRAIN mode)
-        if mode == tf.estimator.ModeKeys.TRAIN:
-            tf.summary.scalar('Training Loss', loss)
-            optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.001)
-            train_op = optimizer.minimize(
-                loss=loss,
-                global_step=tf.train.get_global_step())
-            return tf.estimator.EstimatorSpec(mode=mode, loss=loss, train_op=train_op)
-
+        tf.summary.scalar('Training Loss', loss)
+        optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.001)
+        train_op = optimizer.minimize(
+            loss=loss,
+            global_step=tf.train.get_global_step())
         # Add evaluation metrics (for EVAL mode)
         eval_metric_ops = {
             "accuracy": tf.metrics.accuracy(
-                labels=labels, predictions=predictions["classes"])}
-        return tf.estimator.EstimatorSpec(
-            mode=mode, loss=loss, eval_metric_ops=eval_metric_ops)
+                labels=labels, predictions=predictions["probabilities"])}
+
+        return tf.estimator.EstimatorSpec(mode=mode, loss=loss, train_op=train_op, eval_metric_ops=eval_metric_ops)
 
 
 def predict(image):
     input_fn = tf.estimator.inputs.numpy_input_fn(x={'images': np.array(
-      [image], dtype=np.float32)}, num_epochs=1, shuffle=False)
+        [image], dtype=np.float32)}, num_epochs=1, shuffle=False)
     model = tf.estimator.Estimator(cnn_model_fn, model_dir=data.MODEL_DIR)
     prediction = list(model.predict(input_fn))
 
@@ -98,23 +90,11 @@ def predict(image):
 
 
 def get_validation_metrics():
-
-
-
-
     validation_metrics = {
         "accuracy":
             tf.contrib.learn.MetricSpec(
                 metric_fn=tf.contrib.metrics.streaming_accuracy,
-                prediction_key=tf.contrib.learn.prediction_key.PredictionKey.CLASSES),
-        "precision":
-            tf.contrib.learn.MetricSpec(
-                metric_fn=tf.contrib.metrics.streaming_precision,
-                prediction_key=tf.contrib.learn.prediction_key.PredictionKey.CLASSES),
-        "recall":
-            tf.contrib.learn.MetricSpec(
-                metric_fn=tf.contrib.metrics.streaming_recall,
-                prediction_key=tf.contrib.learn.prediction_key.PredictionKey.CLASSES)
+                prediction_key='accuracy')
     }
 
     return validation_metrics
@@ -140,10 +120,6 @@ def launch_training():
 
     datasets = get_data()
 
-    tr = tf.convert_to_tensor(datasets[TRAINING_SET][DATA], dtype=tf.float32)
-        # Add ops to save and restore all the variables.
-    lb = tf.convert_to_tensor(datasets[TRAINING_SET][LABELS], dtype=tf.float32)
-
     batch_size = 20
     num_steps = 3000
 
@@ -161,7 +137,7 @@ def launch_training():
 
         validation_monitor = get_validation_monitor(datasets[TEST_SET][DATA], datasets[TEST_SET][LABELS],
                                                     get_validation_metrics())
-
         hooks = monitor_lib.replace_monitors_with_hooks([validation_monitor], model)
         model.train(input_fn, steps=num_steps, hooks=hooks)
 
+        # model.train(input_fn, steps=num_steps)

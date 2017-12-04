@@ -22,7 +22,7 @@ def launch_webcam():
     else:
         rval = False
 
-    enable_predictions = False
+    enable_predictions = True
 
     while rval:
         rval, frame = vc.read()
