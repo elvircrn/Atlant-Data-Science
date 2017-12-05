@@ -17,11 +17,12 @@ from tensorflow.contrib.learn.python.learn import monitors as monitor_lib
 def cnn_model_fn(features, labels, mode):
     reuse = None
     dropout = 0.5
-    n_classes = 9
+    n_classes = 8
 
     is_training = (mode == tf.estimator.ModeKeys.TRAIN)
 
     with tf.variable_scope('ConvNet', reuse=reuse):
+        # regularizer = tf.contrib.layers.l2_regularizer(scale=0.1)
         x = tf.reshape(features['images'], shape=[-1, 48, 48, 1])
         conv1 = tf.layers.conv2d(x, 64, 3, activation=tf.nn.relu)
         conv2 = tf.layers.conv2d(conv1, 64, 3, activation=tf.nn.relu)
@@ -62,13 +63,16 @@ def cnn_model_fn(features, labels, mode):
         if mode == tf.estimator.ModeKeys.PREDICT:
             return tf.estimator.EstimatorSpec(mode=tf.estimator.ModeKeys.PREDICT, predictions=predictions)
 
+        epsilon = tf.constant(1e-8)
+        out = out + epsilon
+
         # Calculate Loss (for both TRAIN and EVAL modes)
-        # onehot_labels = tf.one_hot(indices=tf.cast(labels, tf.int32), depth=9)
+        # onehot_labels = tf.one_hot(indices=tf.cast(labels, tf.int32), depth=n_classes)
         loss = tf.losses.softmax_cross_entropy(
             onehot_labels=labels, logits=out)
 
         tf.summary.scalar('Training Loss', loss)
-        optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.001)
+        optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.0001)
         train_op = optimizer.minimize(
             loss=loss,
             global_step=tf.train.get_global_step())
@@ -77,7 +81,7 @@ def cnn_model_fn(features, labels, mode):
             "accuracy": tf.metrics.accuracy(
                 labels=labels, predictions=predictions["probabilities"])}
 
-        return tf.estimator.EstimatorSpec(mode=mode, loss=loss, train_op=train_op, eval_metric_ops=eval_metric_ops)
+        return tf.estimator.EstimatorSpec(mode=mode, loss=loss, train_op=train_op)
 
 
 def predict(image):
@@ -104,6 +108,7 @@ def get_validation_monitor(test_data, test_labels, validation_metrics):
     validation_monitor = tf.contrib.learn.monitors.ValidationMonitor(
         test_data,
         test_labels,
+        eval_steps=1,
         every_n_steps=50,
         metrics=validation_metrics)
 
@@ -120,7 +125,7 @@ def launch_training():
 
     datasets = get_data()
 
-    batch_size = 20
+    batch_size = 64
     num_steps = 3000
 
     input_fn = tf.estimator.inputs.numpy_input_fn(
@@ -138,6 +143,6 @@ def launch_training():
         validation_monitor = get_validation_monitor(datasets[TEST_SET][DATA], datasets[TEST_SET][LABELS],
                                                     get_validation_metrics())
         hooks = monitor_lib.replace_monitors_with_hooks([validation_monitor], model)
-        model.train(input_fn, steps=num_steps, hooks=hooks)
+        model.train(input_fn, steps=num_steps)
 
         # model.train(input_fn, steps=num_steps)

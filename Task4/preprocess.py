@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 
 from helpers import perc_split
+from sklearn.preprocessing import normalize
 
 
 def to_vector(pixels):
@@ -17,24 +18,29 @@ def labels_to_vector(entry):
 
 
 def majority_voting(labels, n_classes):
-    np.zeros((labels.size, n_classes))
+    major_labels = np.zeros((len(labels), n_classes), dtype=np.float32)
+    major_labels.fill(1e-8)
     max_ids = np.argmax(labels, axis=1)
-    labels[np.arange(max_ids.size), max_ids] = 1
-    return labels
+    major_labels[np.arange(max_ids.size), max_ids] = 1
+    return major_labels
 
 
-def split(input, labels):
+def split(faces, labels):
     set_distribution = [0.4, 0.3, 0.3]
-    datasets = list(zip(perc_split(input, set_distribution), perc_split(labels, set_distribution)))
+    datasets = list(zip(perc_split(faces, set_distribution), perc_split(labels, set_distribution)))
     return datasets
 
 
-def delete_unknown(data):
-    ferplus = ferplus[ferplus['NF'] != 10]
-    del ferplus['NF']
-    del ferplus['unknown']
-    return data
+def normalize_pixels(faces):
+    faces = normalize(faces, axis=0, norm='max')
+    return faces
 
+
+def delete_unknown(data):
+    data = data[data['NF'] != 10]
+    del data['NF']
+    del data['unknown']
+    return data
 
 
 def get_data():
@@ -45,23 +51,22 @@ def get_data():
     del fer2013['Usage']
 
     ferplus = pd.concat([fer2013, fer2013new], axis=1)
-
     ferplus = ferplus.dropna()
-
     ferplus = delete_unknown(ferplus)
 
-    input = ferplus['pixels'].apply(to_vector).values
-    input = np.concatenate(input).reshape((input.size, input[0].size)).astype(np.float32)
+    faces = ferplus['pixels'].apply(to_vector).values
+    faces = np.concatenate(faces).reshape((faces.size, faces[0].size)).astype(np.float32)
+    faces = normalize_pixels(faces)
 
     labels = pd.DataFrame(
         [ferplus['neutral'].astype(int), ferplus['happiness'].astype(int), ferplus['surprise'].astype(int),
          ferplus['sadness'].astype(int), ferplus['anger'].astype(int),
-         ferplus['disgust'].astype(int), ferplus['fear'].astype(int), ferplus['contempt'].astype(int),
-         ferplus['unknown'].astype(int)]).as_matrix().T.astype(np.float32)
-    
-    labels = majority_voting(labels, 9)
+         ferplus['disgust'].astype(int), ferplus['fear'].astype(int),
+         ferplus['contempt'].astype(int)]).as_matrix().T.astype(np.float32)
 
-    return split(input, labels)
+    labels = majority_voting(labels, n_classes=8)
+
+    return split(faces, labels)
 
 
 def get_quick_train():
