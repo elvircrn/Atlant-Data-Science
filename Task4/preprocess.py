@@ -26,7 +26,7 @@ def majority_voting(labels, n_classes):
 
 
 def split(faces, labels):
-    set_distribution = [0.4, 0.3, 0.3]
+    set_distribution = [0.7, 0.15, 0.15]
     datasets = list(zip(perc_split(faces, set_distribution), perc_split(labels, set_distribution)))
     return datasets
 

@@ -75,15 +75,15 @@ def model_fn(features, labels, mode, params):
     is_training = mode == ModeKeys.TRAIN
     # Define model's architecture
     logits = cnn_architecture(features, is_training=is_training)
-    predictions = tf.argmax(logits, axis=-1)
+    predictions = tf.argmax(logits, axis=1)
     # Loss, training and eval operations are not needed during inference.
     loss = None
     train_op = None
     eval_metric_ops = {}
-
     if mode != ModeKeys.INFER:
         loss = tf.losses.softmax_cross_entropy(
-            onehot_labels=labels, logits=logits)
+            labels,
+            logits=logits)
         train_op = get_train_op_fn(loss, params)
         eval_metric_ops = get_eval_metric_ops(labels, predictions)
     return tf.estimator.EstimatorSpec(
@@ -105,11 +105,23 @@ def get_train_op_fn(loss, params):
 
 
 def get_eval_metric_ops(labels, predictions):
+    argmax_labels = tf.argmax(input=labels, axis=1)
+
     return {
         'Accuracy': tf.metrics.accuracy(
-            labels=labels,
+            labels=argmax_labels,
             predictions=predictions,
-            name='accuracy')
+            name='accuracy'),
+        'Precision': tf.metrics.precision(
+            labels=argmax_labels,
+            predictions=predictions,
+            name='precision'
+        ),
+        'Recall': tf.metrics.recall(
+            labels=argmax_labels,
+            predictions=predictions,
+            name='recall'
+        )
     }
 
 
@@ -137,6 +149,7 @@ def cnn_architecture(inputs, is_training, scope=data.DEFAULT_SCOPE):
             net = slim.max_pool2d(net, 2, stride=2, scope='pool3')
             net = slim.dropout(net, is_training=is_training, scope='dropout3')
 
+            net = slim.flatten(net)
             net = slim.fully_connected(net, data.N_CLASSES, activation_fn=None, scope='fc1')
         return net
 
