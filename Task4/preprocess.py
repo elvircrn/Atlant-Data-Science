@@ -64,7 +64,7 @@ def get_data(split_data=False):
          ferplus['disgust'].astype(int), ferplus['fear'].astype(int),
          ferplus['contempt'].astype(int)]).as_matrix().T.astype(np.float32)
 
-    labels = majority_voting(labels, n_classes=8)
+    labels = majority_voting(labels, n_classes=8) / 10
 
     if split_data:
         return split(faces, labels)
