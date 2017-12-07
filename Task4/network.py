@@ -128,11 +128,13 @@ def launch_training():
     batch_size = 64
     num_steps = 3000
 
+    # The Estimator class represents a model, as well as how this model
+    # should be trained and evaluated.
     input_fn = tf.estimator.inputs.numpy_input_fn(
         x={'images': datasets[TRAINING_SET][DATA]}, y=datasets[TRAINING_SET][LABELS],
         batch_size=batch_size, num_epochs=None, shuffle=True)
-    # Train the Model
     init = tf.global_variables_initializer()
+
     # saver = tf.train.Saver()
 
     with tf.Session() as sess:

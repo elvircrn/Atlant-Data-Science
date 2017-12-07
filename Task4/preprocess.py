@@ -43,7 +43,7 @@ def delete_unknown(data):
     return data
 
 
-def get_data():
+def get_data(split_data=False):
     fer2013 = pd.read_csv('Data/FERPlus/fer2013.csv')
     fer2013new = pd.read_csv('Data/FERPlus/fer2013new.csv')
 
@@ -66,8 +66,22 @@ def get_data():
 
     labels = majority_voting(labels, n_classes=8)
 
-    return split(faces, labels)
+    if split_data:
+        return split(faces, labels)
+    else:
+        return faces, labels
 
 
-def get_quick_train():
-    pass
+# TODO: Refactor as soon as model training is fully implemented
+def get_training():
+    return get_data(split_data=True)[0]
+
+
+def get_test():
+    return get_data(split_data=True)[1]
+
+
+def get_validation():
+    return get_data(split_data=True)[2]
+
+
