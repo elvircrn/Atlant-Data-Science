@@ -1,0 +1,65 @@
+import tensorflow as tf
+from tensorflow.contrib import slim
+from tensorflow.contrib.learn import ModeKeys
+from tensorflow.contrib.learn import learn_runner
+
+import preprocess
+import data
+
+def mini_vgg(inputs, is_training, scope=data.DEFAULT_SCOPE):
+    with tf.variable_scope(scope):
+        with slim.arg_scope(
+                [slim.conv2d, slim.fully_connected],
+                weights_initializer=tf.contrib.layers.xavier_initializer(),
+                activation_fn=tf.nn.relu):
+            net = slim.repeat(inputs, 2, slim.conv2d, 64, [3, 3], padding='VALID', scope='conv1')
+            net = slim.max_pool2d(net, 2, stride=2, scope='pool1')
+            net = slim.dropout(net, is_training=is_training, scope='dropout1')
+
+            net = slim.repeat(net, 3, slim.conv2d, 128, [3, 3], padding='VALID', scope='conv2')
+            net = slim.max_pool2d(net, 2, stride=2, scope='pool2')
+            net = slim.dropout(net, is_training=is_training, scope='dropout2')
+
+            net = slim.repeat(net, 3, slim.conv2d, 256, [3, 3], padding='VALID', scope='conv3')
+            net = slim.max_pool2d(net, 2, stride=2, scope='pool3')
+            net = slim.dropout(net, is_training=is_training, scope='dropout3')
+
+            net = slim.flatten(net)
+            net = slim.fully_connected(net, data.N_CLASSES, activation_fn=None, scope='fc1')
+
+            net = slim.softmax(net, scope='sm1')
+        return net
+
+
+def deeper(inputs, is_training, scope=data.DEFAULT_SCOPE):
+    with tf.variable_scope(scope):
+        with slim.arg_scope(
+                [slim.conv2d, slim.fully_connected],
+                weights_initializer=tf.contrib.layers.xavier_initializer(),
+                activation_fn=tf.nn.relu):
+            net = slim.repeat(inputs, 2, slim.conv2d, 64, [3, 3], padding='VALID', scope='conv1')
+            net = slim.max_pool2d(net, 2, stride=2, scope='pool1')
+            net = slim.dropout(net, is_training=is_training, scope='dropout1')
+
+            net = slim.repeat(net, 3, slim.conv2d, 128, [3, 3], padding='VALID', scope='conv2')
+            net = slim.max_pool2d(net, 2, stride=2, scope='pool2')
+            net = slim.dropout(net, is_training=is_training, scope='dropout2')
+
+            net = slim.repeat(net, 3, slim.conv2d, 256, [3, 3], padding='VALID', scope='conv3')
+            net = slim.max_pool2d(net, 2, stride=2, scope='pool3')
+            net = slim.dropout(net, is_training=is_training, scope='dropout3')
+
+            net = slim.repeat(net, 3, slim.conv2d, 256, [3, 3], padding='VALID', scope='conv4')
+            net = slim.max_pool2d(net, 2, stride=2, scope='pool4')
+            net = slim.dropout(net, is_training=is_training, scope='dropout4')
+
+            net = slim.flatten(net)
+            net = slim.fully_connected(net, data.N_CLASSES, activation_fn=None, scope='fc1')
+
+            net = slim.softmax(net, scope='sm1')
+        return net
+
+
+
+
+

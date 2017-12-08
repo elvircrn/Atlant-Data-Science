@@ -22,7 +22,7 @@ def get_flags():
 
 def run_experiment(argv=None):
     params = tf.contrib.training.HParams(
-        learning_rate=0.002,
+        learning_rate=0.00002,
         n_classes=data.N_CLASSES,
         train_steps=50000,
         min_eval_frequency=50
@@ -104,10 +104,17 @@ def get_train_op_fn(loss, params):
     )
 
 
+def f_score(predictions=None, labels=None, weights=None):
+    P, update_op1 = tf.contrib.metrics.streaming_precision(predictions, labels)
+    R, update_op2 = tf.contrib.metrics.streaming_recall(predictions, labels)
+    eps = 1e-5
+    return 2 * (P * R) / (P + R + eps), tf.group(update_op1, update_op2)
+
+
 def get_eval_metric_ops(labels, predictions):
     argmax_labels = tf.argmax(input=labels, axis=1)
 
-    return {
+    eval_dict = {
         'Accuracy': tf.metrics.accuracy(
             labels=argmax_labels,
             predictions=predictions,
@@ -121,8 +128,16 @@ def get_eval_metric_ops(labels, predictions):
             labels=argmax_labels,
             predictions=predictions,
             name='recall'
-        )
+        ),
+        # 'F-Score': f_score(predictions, labels)
     }
+
+    # precision = eval_dict['Precision'][0]
+    # recall = eval_dict['Recall'][0]
+    # f_score = (2 * precision * recall) / (precision + recall)
+    # eval_dict['F-Score'] = f_score
+
+    return eval_dict
 
 
 # yellow  - conv
@@ -151,6 +166,8 @@ def cnn_architecture(inputs, is_training, scope=data.DEFAULT_SCOPE):
 
             net = slim.flatten(net)
             net = slim.fully_connected(net, data.N_CLASSES, activation_fn=None, scope='fc1')
+
+            net = slim.softmax(net, scope='sm1')
         return net
 
 

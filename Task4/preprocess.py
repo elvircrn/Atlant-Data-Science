@@ -35,6 +35,9 @@ def normalize_pixels(faces):
     faces = normalize(faces, axis=0, norm='max')
     return faces
 
+def scale_labels(labels):
+    return labels / 10
+
 
 def delete_unknown(data):
     data = data[data['NF'] != 10]
@@ -64,7 +67,9 @@ def get_data(split_data=False):
          ferplus['disgust'].astype(int), ferplus['fear'].astype(int),
          ferplus['contempt'].astype(int)]).as_matrix().T.astype(np.float32)
 
-    labels = majority_voting(labels, n_classes=8) / 10
+    labels = majority_voting(labels, n_classes=8)
+
+    labels = scale_labels(labels)
 
     if split_data:
         return split(faces, labels)
