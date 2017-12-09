@@ -99,6 +99,7 @@ def get_train_op_fn(loss, params):
     return tf.contrib.layers.optimize_loss(
         loss=loss,
         global_step=tf.contrib.framework.get_global_step(),
+        # Hyper
         optimizer=tf.train.AdamOptimizer,
         learning_rate=params.learning_rate
     )

@@ -31,7 +31,7 @@ def mini_vgg(inputs, is_training, scope=data.DEFAULT_SCOPE):
         return net
 
 
-def deeper(inputs, is_training, scope=data.DEFAULT_SCOPE):
+def small_vgg(inputs, is_training, scope=data.DEFAULT_SCOPE):
     with tf.variable_scope(scope):
         with slim.arg_scope(
                 [slim.conv2d, slim.fully_connected],
@@ -49,6 +49,8 @@ def deeper(inputs, is_training, scope=data.DEFAULT_SCOPE):
             net = slim.max_pool2d(net, 2, stride=2, scope='pool3')
             net = slim.dropout(net, is_training=is_training, scope='dropout3')
 
+
+# TODO: Add L2 on last layer
             net = slim.repeat(net, 3, slim.conv2d, 256, [3, 3], padding='VALID', scope='conv4')
             net = slim.max_pool2d(net, 2, stride=2, scope='pool4')
             net = slim.dropout(net, is_training=is_training, scope='dropout4')
