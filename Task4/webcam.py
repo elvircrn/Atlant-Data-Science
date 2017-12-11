@@ -1,7 +1,7 @@
 import cv2
 from facedetect import detect
 
-import network
+import network2
 
 
 class FontData:
@@ -22,15 +22,18 @@ def launch_webcam():
     else:
         rval = False
 
-    enable_predictions = False
+    enable_predictions = True
+
+    network2.initialize_flags()
 
     while rval:
         rval, frame = vc.read()
+        frame = cv2.flip(frame, 1)
         full_frame, images, lower_right_corners, extracted_faces = detect(frame)
 
         if len(images) > 0:
             if enable_predictions:
-                predictions = [network.predict(image) for image in images]
+                predictions = [network2.predict(image) for image in images]
             else:
                 predictions = [0]
             cv2.imshow("preview2", extracted_faces[0])

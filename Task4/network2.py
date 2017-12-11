@@ -1,11 +1,17 @@
 import tensorflow as tf
+import numpy as np
+
 from tensorflow.contrib import slim
 from tensorflow.contrib.learn import ModeKeys
 from tensorflow.contrib.learn import learn_runner
-import numpy as np
+
 import preprocess
 import data
-import hyper_parameters as hp
+import hyperopt
+import cost_functions as cf
+
+from hyperopt import hp
+
 
 
 # Run only once in main
@@ -21,24 +27,53 @@ def get_flags():
     return tf.app.flags.FLAGS
 
 
-def run_experiment(argv=None):
-    params = tf.contrib.training.HParams(
-        learning_rate=0.00002,
-        n_classes=data.N_CLASSES,
-        train_steps=5,
-        min_eval_frequency=50
-    )
-
-    run_config = tf.contrib.learn.RunConfig(model_dir=get_flags().model_dir)
-
+def run_and_get_loss(params, run_config):
     runner = learn_runner.run(
         experiment_fn=experiment_fn,
         run_config=run_config,
         schedule="train_and_evaluate",
         hparams=params
     ) 
+    return runner[0]['loss']
 
-    loss = runner[0]['loss']
+
+def get_run_config():
+    run_config = tf.contrib.learn.RunConfig(model_dir=get_flags().model_dir)
+    return run_config
+
+
+def get_experiment_params():
+    return tf.contrib.training.HParams(
+        learning_rate=0.00002,
+        n_classes=data.N_CLASSES,
+        train_steps=5,
+        min_eval_frequency=50
+    )
+
+
+def objective(args):
+    params = get_experiment_params()
+    params.learning_rate = args['learn_rate']
+    run_config = get_run_config()
+    loss = run_and_get_loss(params, run_config)
+
+    return loss
+
+
+def optimize():
+    space = {
+        'learn_rate': hp.uniform('learn_rate', 0.0001, 1.0)
+    } 
+
+    best_model = hyperopt.fmin(objective, space, algo=hyperopt.tpe.suggest, max_evals=3)
+
+    print(best_model)
+    print(hyperopt.space_eval(space, best_model))
+
+
+
+def run_experiment(argv=None):
+    optimize()
 
 
 def experiment_fn(run_config, params):
@@ -250,11 +285,16 @@ def get_test_inputs(batch_size, datasets):
 
 
 def run_network():
-    hyperparams = hp.HyperParameters()
     initialize_flags()
     tf.app.run(
-        main=run_experiment,
-        argv=hyperparams
+        main=run_experiment
     )
 
 
+def predict(image):
+    image = np.reshape(image, [-1, 48, 48, 1]).astype(dtype=np.float32)
+    estimator = get_estimator(get_run_config(), get_experiment_params())
+    predictions = estimator.predict(input_fn=lambda: image)
+
+    for prediction in predictions:
+        return prediction

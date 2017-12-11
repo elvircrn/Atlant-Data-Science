@@ -366,6 +366,13 @@ Although I am sure that the choice of algorithm was the right one, the grim-look
 
 The problem defnitely turned out to be more difficult than I initialy expected it to be. To get rid of overfitting, one probably has to put more work into parameter tuning and dataset selection and training.
 
+# Task 4
+
+Hyperparameters to consider:
+* Learn rate ( [0.0001, 1.0] )
+* Cost functions
+* Number of 
+
 
 
 
