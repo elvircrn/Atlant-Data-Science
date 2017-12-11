@@ -2,9 +2,10 @@ import tensorflow as tf
 from tensorflow.contrib import slim
 from tensorflow.contrib.learn import ModeKeys
 from tensorflow.contrib.learn import learn_runner
-
+import numpy as np
 import preprocess
 import data
+import hyper_parameters as hp
 
 
 # Run only once in main
@@ -24,18 +25,20 @@ def run_experiment(argv=None):
     params = tf.contrib.training.HParams(
         learning_rate=0.00002,
         n_classes=data.N_CLASSES,
-        train_steps=50000,
+        train_steps=5,
         min_eval_frequency=50
     )
 
     run_config = tf.contrib.learn.RunConfig(model_dir=get_flags().model_dir)
 
-    learn_runner.run(
+    runner = learn_runner.run(
         experiment_fn=experiment_fn,
         run_config=run_config,
         schedule="train_and_evaluate",
         hparams=params
-    )
+    ) 
+
+    loss = runner[0]['loss']
 
 
 def experiment_fn(run_config, params):
@@ -247,7 +250,11 @@ def get_test_inputs(batch_size, datasets):
 
 
 def run_network():
+    hyperparams = hp.HyperParameters()
     initialize_flags()
     tf.app.run(
-        main=run_experiment
+        main=run_experiment,
+        argv=hyperparams
     )
+
+
