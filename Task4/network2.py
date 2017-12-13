@@ -8,7 +8,8 @@ from tensorflow.contrib.learn import learn_runner
 import preprocess
 import data
 import hyperopt
-import cost_functions as cf
+# import cost_functions as cf
+import architectures as arch
 
 from hyperopt import hp
 
@@ -33,7 +34,7 @@ def run_and_get_loss(params, run_config):
         run_config=run_config,
         schedule="train_and_evaluate",
         hparams=params
-    ) 
+    )
     return runner[0]['loss']
 
 
@@ -46,14 +47,16 @@ def get_experiment_params():
     return tf.contrib.training.HParams(
         learning_rate=0.00002,
         n_classes=data.N_CLASSES,
-        train_steps=5,
-        min_eval_frequency=50
+        train_steps=10000,
+        min_eval_frequency=50,
+        architecture=arch.padded_mini_vgg
     )
 
 
 def objective(args):
     params = get_experiment_params()
     params.learning_rate = args['learn_rate']
+    params.architecture = args['architecture']
     run_config = get_run_config()
     loss = run_and_get_loss(params, run_config)
 
@@ -61,15 +64,19 @@ def objective(args):
 
 
 def optimize():
-    space = {
-        'learn_rate': hp.uniform('learn_rate', 0.0001, 1.0)
-    } 
+    # space = {
+    #     'learn_rate': hp.uniform('learn_rate', 0.001, 1.0),
+    #     'architecture': hp.choice('architecture', [arch.mini_vgg, arch.mini_vgg])
+    # }
+#
+    # best_model = hyperopt.fmin(objective, space, algo=hyperopt.tpe.suggest, max_evals=20)
+#
+    # print(best_model)
+    # print(hyperopt.space_eval(space, best_model))
 
-    best_model = hyperopt.fmin(objective, space, algo=hyperopt.tpe.suggest, max_evals=3)
-
-    print(best_model)
-    print(hyperopt.space_eval(space, best_model))
-
+    params = get_experiment_params()
+    run_config = tf.contrib.learn.RunConfig(model_dir=get_flags().model_dir)
+    run_and_get_loss(params, run_config)
 
 
 def run_experiment(argv=None):
@@ -112,7 +119,7 @@ def get_estimator(run_config, params):
 def model_fn(features, labels, mode, params):
     is_training = mode == ModeKeys.TRAIN
     # Define model's architecture
-    logits = cnn_architecture(features, is_training=is_training)
+    logits = params.architecture(features, is_training=is_training)
     predictions = tf.argmax(logits, axis=1)
     # Loss, training and eval operations are not needed during inference.
     loss = None

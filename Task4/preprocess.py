@@ -1,6 +1,8 @@
 import pandas as pd
 import numpy as np
 
+import data
+
 from helpers import perc_split
 from sklearn.preprocessing import normalize
 
@@ -35,8 +37,9 @@ def normalize_pixels(faces):
     faces = normalize(faces, axis=0, norm='max')
     return faces
 
+
 def scale_labels(labels):
-    return labels / 10
+    return labels / data.N_VOTES
 
 
 def delete_unknown(data):
