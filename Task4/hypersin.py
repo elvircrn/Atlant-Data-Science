@@ -72,10 +72,7 @@ def plot_error():
     X = range(100)
     Y = [get_error(fit(*DataSet.get_train(), x), DataSet.get_test()) for x in range(100)]
 
-    plt.subplot(111)
     plt.plot(X, Y)
-    plt.subplot(212)
-    plt.plot(DataSet.get_train()[0], ground(DataSet.get_train()[0]))
     plt.show()
 
 

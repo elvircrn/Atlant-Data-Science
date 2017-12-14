@@ -26,15 +26,11 @@ def detect(image=None):
     images = []
     lower_right_corners = []
 
-    ind = 0
-    # Draw a rectangle around the faces
     for (x, y, w, h) in faces:
         image = cv2.rectangle(image, (x + 1, y + 1), (x + w - 1, y + h - 1), (0, 255, 0), 2)
         crop_img = image[y: y + h, x: x + w]  # Crop from x, y, w, h -> 100, 200, 300, 400
-        ind += 1
         crop_img = cv2.resize(crop_img, (48, 48), cv2.INTER_CUBIC)
         crop_img = cv2.cvtColor(crop_img, cv2.COLOR_BGR2GRAY)
-        # cv2.imwrite("face{}.jpg".format(ind), crop_img)
         images.append(crop_img)
         lower_right_corners.append((y + h, x + w))
 

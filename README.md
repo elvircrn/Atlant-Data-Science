@@ -371,7 +371,8 @@ The problem defnitely turned out to be more difficult than I initialy expected i
 Hyperparameters to consider:
 * Learn rate ( [0.0001, 1.0] )
 * Cost functions
-* Number of 
+* Number of layers
+* Dropout ([0.4, 1.0])
 
 
 

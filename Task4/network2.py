@@ -1,5 +1,6 @@
 import tensorflow as tf
 import numpy as np
+import matplotlib as plt
 
 from tensorflow.contrib import slim
 from tensorflow.contrib.learn import ModeKeys
@@ -108,7 +109,12 @@ def experiment_fn(run_config, params):
     return experiment
 
 
-def get_estimator(run_config, params):
+def get_estimator(run_config=None, params=None):
+    if run_config is None:
+        run_config = get_run_config()
+    if params is None:
+        params = get_experiment_params()
+
     return tf.estimator.Estimator(
         model_fn=model_fn,  # First-class function
         params=params,  # HParams
@@ -298,10 +304,8 @@ def run_network():
     )
 
 
-def predict(image):
-    image = np.reshape(image, [-1, 48, 48, 1]).astype(dtype=np.float32)
-    estimator = get_estimator(get_run_config(), get_experiment_params())
-    predictions = estimator.predict(input_fn=lambda: image)
+def predict(estimator, images):
+    images = np.reshape(images, [-1, 48, 48, 1]).astype(dtype=np.float32)
+    predictions = estimator.predict(input_fn=lambda: images)
+    return predictions
 
-    for prediction in predictions:
-        return prediction
