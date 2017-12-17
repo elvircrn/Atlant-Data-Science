@@ -1,10 +1,7 @@
 import os
 
 # TODO: Start using relative path
-MODEL_DIR = 'C:\\Users\\elvircrn\\Documents\\codes2\\Atlant Data Science\\Project1\\Atlant-Data-Science\\Task4\\Data\\log'
-
-
-        
+MODEL_DIR = os.path.abspath("Data/log")
 
 N_CLASSES = 8
 N_VOTES   = 10

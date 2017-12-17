@@ -15,11 +15,9 @@ import architectures as arch
 from hyperopt import hp
 
 
-
 # Run only once in main
 def initialize_flags():
     tf.logging.set_verbosity(tf.logging.DEBUG)
-    FLAGS = tf.app.flags.FLAGS
     tf.app.flags.DEFINE_string(
         flag_name='model_dir', default_value=data.MODEL_DIR,
         docstring='Output directory for model and training stats.')
@@ -48,7 +46,7 @@ def get_experiment_params():
     return tf.contrib.training.HParams(
         learning_rate=0.00002,
         n_classes=data.N_CLASSES,
-        train_steps=10000,
+        train_steps=10,
         min_eval_frequency=50,
         architecture=arch.padded_mini_vgg
     )
@@ -65,19 +63,21 @@ def objective(args):
 
 
 def optimize():
-    # space = {
-    #     'learn_rate': hp.uniform('learn_rate', 0.001, 1.0),
-    #     'architecture': hp.choice('architecture', [arch.mini_vgg, arch.mini_vgg])
-    # }
-#
-    # best_model = hyperopt.fmin(objective, space, algo=hyperopt.tpe.suggest, max_evals=20)
-#
-    # print(best_model)
-    # print(hyperopt.space_eval(space, best_model))
+    enable_hyperot = True
+    
+    space = {
+        'learn_rate': hp.uniform('learn_rate', 0.001, 1.0),
+        'architecture': hp.choice('architecture', [arch.mini_vgg, arch.mini_vgg])
+    }
 
-    params = get_experiment_params()
-    run_config = tf.contrib.learn.RunConfig(model_dir=get_flags().model_dir)
-    run_and_get_loss(params, run_config)
+    best_model = hyperopt.fmin(objective, space, algo=hyperopt.tpe.suggest, max_evals=20)
+
+    print(best_model)
+    print(hyperopt.space_eval(space, best_model))
+
+    # params = get_experiment_params()
+    # run_config = tf.contrib.learn.RunConfig(model_dir=get_flags().model_dir)
+    # run_and_get_loss(params, run_config)
 
 
 def run_experiment(argv=None):
@@ -157,10 +157,10 @@ def get_train_op_fn(loss, params):
 
 
 def f_score(predictions=None, labels=None, weights=None):
-    P, update_op1 = tf.contrib.metrics.streaming_precision(predictions, labels)
-    R, update_op2 = tf.contrib.metrics.streaming_recall(predictions, labels)
+    p, update_op1 = tf.contrib.metrics.streaming_precision(predictions, labels)
+    r, update_op2 = tf.contrib.metrics.streaming_recall(predictions, labels)
     eps = 1e-5
-    return 2 * (P * R) / (P + R + eps), tf.group(update_op1, update_op2)
+    return 2 * (p * r) / (p + r + eps), tf.group(update_op1, update_op2)
 
 
 def get_eval_metric_ops(labels, predictions):
@@ -308,4 +308,3 @@ def predict(estimator, images):
     images = np.reshape(images, [-1, 48, 48, 1]).astype(dtype=np.float32)
     predictions = estimator.predict(input_fn=lambda: images)
     return predictions
-

@@ -6,6 +6,7 @@ from facedetect import detect
 
 import visualize as vz
 import network2
+import architectures
 
 
 class FontData:
@@ -43,16 +44,18 @@ def launch_webcam():
             if enable_predictions:
                 predictions = network2.predict(estimator, images)
             else:
-                predictions = [0]
+                predictions = np.zeros(len(images))
 
             vis = np.concatenate(extracted_faces, axis=1)
             cv2.imshow(EXTRACTED_WINDOW, vis)
 
             # TODO: Add layer visualization here
-            # vz.get_activations(
+            # vz.get_activations(architectures.get_layers()[0], images[0])
 
             for prediction, lower_right_corner in zip(predictions, lower_right_corners):
-                cv2.putText(frame, labels[prediction],
+                # label = labels[prediction] if np.random.rand() < 0.8 else 'ugly'
+                label = labels[prediction]
+                cv2.putText(frame, label,
                             tuple(reversed(lower_right_corner)),
                             FontData.font,
                             FontData.font_scale,
@@ -64,4 +67,3 @@ def launch_webcam():
             break
 
     cv2.destroyWindow(MAIN_WINDOW_NAME)
-
