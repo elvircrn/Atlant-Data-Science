@@ -80,7 +80,7 @@ def get_inputs():
     return _INPUTS[0]
 
 
-def padded_mini_vgg(inputs, is_training, scope=data.DEFAULT_SCOPE):
+def padded_mini_vgg(inputs, is_training, dropout, scope=data.DEFAULT_SCOPE):
     with tf.variable_scope(scope):
         with slim.arg_scope(
                 [slim.conv2d, slim.fully_connected],
@@ -91,21 +91,21 @@ def padded_mini_vgg(inputs, is_training, scope=data.DEFAULT_SCOPE):
             _LAYERS.append(net)
             net = slim.max_pool2d(net, 2, stride=2, scope='pool1')
             _LAYERS.append(net)
-            net = slim.dropout(net, is_training=is_training, scope='dropout1')
+            net = slim.dropout(net, keep_prob=dropout, is_training=is_training, scope='dropout1')
             _LAYERS.append(net)
 
             net = slim.repeat(net, 3, slim.conv2d, 128, [3, 3], padding='SAME', scope='conv2')
             _LAYERS.append(net)
             net = slim.max_pool2d(net, 2, stride=2, scope='pool2')
             _LAYERS.append(net)
-            net = slim.dropout(net, is_training=is_training, scope='dropout2')
+            net = slim.dropout(net, keep_prob=dropout, is_training=is_training, scope='dropout2')
             _LAYERS.append(net)
 
             net = slim.repeat(net, 3, slim.conv2d, 256, [3, 3], padding='SAME', scope='conv3')
             _LAYERS.append(net)
             net = slim.max_pool2d(net, 2, stride=2, scope='pool3')
             _LAYERS.append(net)
-            net = slim.dropout(net, is_training=is_training, scope='dropout3')
+            net = slim.dropout(net, keep_prob=dropout, is_training=is_training, scope='dropout3')
             _LAYERS.append(net)
 
             # TODO: Add L2 on last layer
@@ -113,7 +113,7 @@ def padded_mini_vgg(inputs, is_training, scope=data.DEFAULT_SCOPE):
             _LAYERS.append(net)
             net = slim.max_pool2d(net, 2, stride=2, scope='pool4')
             _LAYERS.append(net)
-            net = slim.dropout(net, is_training=is_training, scope='dropout4')
+            net = slim.dropout(net, keep_prob=dropout, is_training=is_training, scope='dropout4')
             _LAYERS.append(net)
 
             net = slim.flatten(net)

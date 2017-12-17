@@ -37,8 +37,11 @@ def run_and_get_loss(params, run_config):
     return runner[0]['loss']
 
 
-def get_run_config():
-    run_config = tf.contrib.learn.RunConfig(model_dir=get_flags().model_dir)
+def get_run_config(model_id=None):
+    if model_id is None:
+        run_config = tf.contrib.learn.RunConfig(model_dir=get_flags().model_dir)
+    else:
+        run_config = tf.contrib.learn.RunConfig(model_dir=get_flags().model_dir + str(model_id))
     return run_config
 
 
@@ -46,9 +49,10 @@ def get_experiment_params():
     return tf.contrib.training.HParams(
         learning_rate=0.00002,
         n_classes=data.N_CLASSES,
-        train_steps=10,
+        train_steps=10000,
         min_eval_frequency=50,
-        architecture=arch.padded_mini_vgg
+        architecture=arch.padded_mini_vgg,
+        dropout=0.6
     )
 
 
@@ -58,26 +62,33 @@ def eager_hack():
     run_and_get_loss(params, get_run_config())
 
 
+mid = 0
+
+
 def objective(args):
+    # TODO: Refactor later
+    global mid
+
     params = get_experiment_params()
     params.learning_rate = args['learn_rate']
-    params.architecture = args['architecture']
-    run_config = get_run_config()
+    params.dropout = args['dropout']
+    mid += 1
+    run_config = get_run_config(mid)
     loss = run_and_get_loss(params, run_config)
 
     return loss
 
 
 def optimize():
-    enable_hyperopt = False
+    enable_hyperopt = True
     
     if enable_hyperopt:
         space = {
-            'learn_rate': hp.uniform('learn_rate', 0.001, 1.0),
-            'architecture': hp.choice('architecture', [arch.mini_vgg, arch.mini_vgg])
+            'learn_rate': hp.uniform('learn_rate', 0.00000001, 1.0),
+            'dropout': hp.uniform('dropout', 0.4, 1.0)
         }
 
-        best_model = hyperopt.fmin(objective, space, algo=hyperopt.tpe.suggest, max_evals=20)
+        best_model = hyperopt.fmin(objective, space, algo=hyperopt.tpe.suggest, max_evals=30)
 
         print(best_model)
         print(hyperopt.space_eval(space, best_model))
@@ -132,7 +143,7 @@ def get_estimator(run_config=None, params=None):
 def model_fn(features, labels, mode, params):
     is_training = mode == ModeKeys.TRAIN
     # Define model's architecture
-    logits = params.architecture(features, is_training=is_training)
+    logits = params.architecture(inputs=features, dropout=params.dropout, is_training=is_training)
     predictions = tf.argmax(logits, axis=1)
     # Loss, training and eval operations are not needed during inference.
     loss = None
@@ -197,37 +208,6 @@ def get_eval_metric_ops(labels, predictions):
     # eval_dict['F-Score'] = f_score
 
     return eval_dict
-
-
-# yellow  - conv
-# green   - max pool
-# orange  - dropout
-# blue    - fully connected
-# gray    - soft-max
-# def cnn_model_fn(features, labels, n_classes, dropout, reuse, is_training):
-def cnn_architecture(inputs, is_training, scope=data.DEFAULT_SCOPE):
-    with tf.variable_scope(scope):
-        with slim.arg_scope(
-                [slim.conv2d, slim.fully_connected],
-                weights_initializer=tf.contrib.layers.xavier_initializer(),
-                activation_fn=tf.nn.relu):
-            net = slim.repeat(inputs, 2, slim.conv2d, 64, [3, 3], padding='VALID', scope='conv1')
-            net = slim.max_pool2d(net, 2, stride=2, scope='pool1')
-            net = slim.dropout(net, is_training=is_training, scope='dropout1')
-
-            net = slim.repeat(net, 3, slim.conv2d, 128, [3, 3], padding='VALID', scope='conv2')
-            net = slim.max_pool2d(net, 2, stride=2, scope='pool2')
-            net = slim.dropout(net, is_training=is_training, scope='dropout2')
-
-            net = slim.repeat(net, 3, slim.conv2d, 256, [3, 3], padding='VALID', scope='conv3')
-            net = slim.max_pool2d(net, 2, stride=2, scope='pool3')
-            net = slim.dropout(net, is_training=is_training, scope='dropout3')
-
-            net = slim.flatten(net)
-            net = slim.fully_connected(net, data.N_CLASSES, activation_fn=None, scope='fc1')
-
-            net = slim.softmax(net, scope='sm1')
-        return net
 
 
 class IteratorInitializerHook(tf.train.SessionRunHook):
