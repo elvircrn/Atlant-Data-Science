@@ -31,9 +31,13 @@ def launch_webcam():
         rval = False
 
     enable_predictions = True
+    enable_visualization = True
 
     network2.initialize_flags()
     estimator = network2.get_estimator()
+
+    if enable_visualization:
+        network2.eager_hack()
 
     while rval:
         rval, frame = vc.read()
@@ -50,7 +54,7 @@ def launch_webcam():
             cv2.imshow(EXTRACTED_WINDOW, vis)
 
             # TODO: Add layer visualization here
-            # vz.get_activations(architectures.get_layers()[0], images[0])
+            vz.get_activations(architectures.get_layers()[0], images[0])
 
             for prediction, lower_right_corner in zip(predictions, lower_right_corners):
                 # label = labels[prediction] if np.random.rand() < 0.8 else 'ugly'

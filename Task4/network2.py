@@ -52,6 +52,12 @@ def get_experiment_params():
     )
 
 
+def eager_hack():
+    params = get_experiment_params()
+    params.train_steps = 1
+    run_and_get_loss(params, get_run_config())
+
+
 def objective(args):
     params = get_experiment_params()
     params.learning_rate = args['learn_rate']
@@ -63,21 +69,22 @@ def objective(args):
 
 
 def optimize():
-    enable_hyperot = True
+    enable_hyperopt = False
     
-    space = {
-        'learn_rate': hp.uniform('learn_rate', 0.001, 1.0),
-        'architecture': hp.choice('architecture', [arch.mini_vgg, arch.mini_vgg])
-    }
+    if enable_hyperopt:
+        space = {
+            'learn_rate': hp.uniform('learn_rate', 0.001, 1.0),
+            'architecture': hp.choice('architecture', [arch.mini_vgg, arch.mini_vgg])
+        }
 
-    best_model = hyperopt.fmin(objective, space, algo=hyperopt.tpe.suggest, max_evals=20)
+        best_model = hyperopt.fmin(objective, space, algo=hyperopt.tpe.suggest, max_evals=20)
 
-    print(best_model)
-    print(hyperopt.space_eval(space, best_model))
-
-    # params = get_experiment_params()
-    # run_config = tf.contrib.learn.RunConfig(model_dir=get_flags().model_dir)
-    # run_and_get_loss(params, run_config)
+        print(best_model)
+        print(hyperopt.space_eval(space, best_model))
+    else:
+        params = get_experiment_params()
+        run_config = tf.contrib.learn.RunConfig(model_dir=get_flags().model_dir)
+        run_and_get_loss(params, run_config)
 
 
 def run_experiment(argv=None):

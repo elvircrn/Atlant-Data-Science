@@ -69,10 +69,15 @@ def small_vgg(inputs, is_training, scope=data.DEFAULT_SCOPE):
 
 
 _LAYERS = []
+_INPUTS = []
 
 
 def get_layers():
     return _LAYERS
+
+
+def get_inputs():
+    return _INPUTS[0]
 
 
 def padded_mini_vgg(inputs, is_training, scope=data.DEFAULT_SCOPE):
@@ -81,6 +86,7 @@ def padded_mini_vgg(inputs, is_training, scope=data.DEFAULT_SCOPE):
                 [slim.conv2d, slim.fully_connected],
                 weights_initializer=tf.contrib.layers.xavier_initializer(),
                 activation_fn=tf.nn.relu):
+            _INPUTS.append(inputs)
             net = slim.repeat(inputs, 2, slim.conv2d, 64, [3, 3], padding='SAME', scope='conv1')
             _LAYERS.append(net)
             net = slim.max_pool2d(net, 2, stride=2, scope='pool1')
