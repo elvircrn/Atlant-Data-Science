@@ -369,24 +369,15 @@ The problem defnitely turned out to be more difficult than I initialy expected i
 # Task 4
 
 Defalt FER label histogram:
-
-neutral      12906
-
-happiness     9355
-
-surprise      4462
-
-sadness       4371
-
-anger         3111
-
-fear           819
-
-disgust        248
-
-unknown        223
-
-contempt       216
+* neutral      12906
+* happiness     9355
+* surprise      4462
+* sadness       4371
+* anger         3111
+* fear           819
+* disgust        248
+* unknown        223
+* contempt       216
 
 Hyperparameters to consider:
 * Learn rate ( [0.0001, 1.0] )
