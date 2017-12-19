@@ -285,10 +285,19 @@ def get_test_inputs(batch_size, datasets):
 
 
 def run_network():
-    initialize_flags()
-    tf.app.run(
-        main=run_experiment
-    )
+    enable_gpu = False
+
+    if enable_gpu:
+        with tf.device("/gpu:0"):
+            initialize_flags()
+            tf.app.run(
+                main=run_experiment
+            )
+    else:
+        initialize_flags()
+        tf.app.run(
+            main=run_experiment
+        )
 
 
 def predict(estimator, images):

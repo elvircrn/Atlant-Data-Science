@@ -42,11 +42,24 @@ def scale_labels(labels):
     return labels / data.N_VOTES
 
 
-def delete_unknown(data):
+def delete_non_face(data):
     data = data[data['NF'] != 10]
     del data['NF']
+    return data
+
+
+def delete_unknown(data):
     del data['unknown']
     return data
+
+
+def rebalance_labels(labels):
+    return labels + np.sum(labels + np.repeat(((10 - labels.sum(axis=1)) / 8), 8).reshape(-1, 8), axis=1)
+
+
+def add_eps(labels):
+    EPS = 1e-8
+    return labels + EPS
 
 
 def get_data(split_data=False):
@@ -58,6 +71,9 @@ def get_data(split_data=False):
 
     ferplus = pd.concat([fer2013, fer2013new], axis=1)
     ferplus = ferplus.dropna()
+
+    ferplus = delete_non_face(ferplus)
+
     ferplus = delete_unknown(ferplus)
 
     faces = ferplus['pixels'].apply(to_vector).values
@@ -70,9 +86,11 @@ def get_data(split_data=False):
          ferplus['disgust'].astype(int), ferplus['fear'].astype(int),
          ferplus['contempt'].astype(int)]).as_matrix().T.astype(np.float32)
 
-    labels = majority_voting(labels, n_classes=8)
+    # labels = majority_voting(labels, n_classes=8)
 
+    labels = rebalance_labels(labels)
     labels = scale_labels(labels)
+    labels = add_eps(labels)
 
     if split_data:
         return split(faces, labels)

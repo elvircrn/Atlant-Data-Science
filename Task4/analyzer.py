@@ -26,6 +26,17 @@ def delete_weird(data):
     return data
 
 
+def plot_emo_hist(data):
+    data.hist(column=['emo_id'], cumulative='True')
+    plt.savefig('Data/Graphs/emo_cnt.png')
+    return data
+
+def emotion_cnt(data):
+    print(data)
+    data['emo_id'] = data.idxmax()
+    return data
+
+
 def filter_secure(data):
     data['confidence'] = data.max(axis=1)
     return data
@@ -67,3 +78,14 @@ def cross_val_analysis():
     plot_cum_confidence_hist(data)
 
     return data
+
+
+def emo_cnt_analysis():
+    data = get_data()
+    (plot_emo_hist
+        (emotion_cnt
+            (delete_non_numeric
+                (delete_weird(data)))))
+    return data
+
+
