@@ -44,7 +44,7 @@ def launch_webcam():
     while rval:
         rval, frame = vc.read()
         full_frame = cv2.flip(frame, 1)
-        images, lower_right_corners, extracted_faces = FaceExtractor.extract_faces(frame)
+        images, lower_right_corners, extracted_faces = FaceExtractor.extract_faces(full_frame)
 
         if len(images) > 0:
             if enable_predictions:
@@ -61,8 +61,8 @@ def launch_webcam():
             for prediction, lower_right_corner in zip(predictions, lower_right_corners):
                 # label = labels[prediction] if np.random.rand() < 0.8 else 'ugly'
                 label = labels[prediction]
-                cv2.putText(frame, label,
-                            tuple(reversed(lower_right_corner)),
+                cv2.putText(full_frame, label,
+                            tuple(lower_right_corner),
                             FontData.font,
                             FontData.font_scale,
                             FontData.font_color,
