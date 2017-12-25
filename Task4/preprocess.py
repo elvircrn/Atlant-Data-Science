@@ -1,9 +1,10 @@
 import pandas as pd
 import numpy as np
 
+import cohn_kanade as ck
 import data
 
-from helpers import perc_split
+from helpers import perc_split, unison_shuffled_copies
 from sklearn.preprocessing import normalize
 
 
@@ -11,12 +12,12 @@ def to_vector(pixels):
     return np.fromstring(pixels, dtype=int, sep=' ')
 
 
-def labels_to_vector(entry):
-    return np.array(
-        [entry['neutral'].astype(int), entry['happiness'].astype(int), entry['surprise'].astype(int),
-         entry['sadness'].astype(int), entry['anger'].astype(int),
-         entry['disgust'].astype(int), entry['fear'].astype(int), entry['contempt'].astype(int),
-         entry['unknown'].astype(int)])
+def extract_labels(ferplus):
+    return pd.DataFrame(
+        [ferplus['neutral'].astype(int), ferplus['happiness'].astype(int), ferplus['surprise'].astype(int),
+         ferplus['sadness'].astype(int), ferplus['anger'].astype(int),
+         ferplus['disgust'].astype(int), ferplus['fear'].astype(int),
+         ferplus['contempt'].astype(int)]).as_matrix().T.astype(np.float32)
 
 
 def majority_voting(labels, n_classes):
@@ -54,7 +55,7 @@ def delete_unknown(data):
 
 
 def rebalance_labels(labels):
-    return labels + np.sum(labels + np.repeat(((10 - labels.sum(axis=1)) / 8), 8).reshape(-1, 8), axis=1)
+    return labels + np.repeat(((10 - labels.sum(axis=1)) / 8), 8).reshape(-1, 8)
 
 
 def add_eps(labels):
@@ -62,7 +63,9 @@ def add_eps(labels):
     return labels + EPS
 
 
-def get_data(split_data=False):
+def get_data(split_data=False, include_ck=False):
+    majority_vote = False
+
     fer2013 = pd.read_csv('Data/FERPlus/fer2013.csv')
     fer2013new = pd.read_csv('Data/FERPlus/fer2013new.csv')
 
@@ -71,31 +74,45 @@ def get_data(split_data=False):
 
     ferplus = pd.concat([fer2013, fer2013new], axis=1)
     ferplus = ferplus.dropna()
-
     ferplus = delete_non_face(ferplus)
-
     ferplus = delete_unknown(ferplus)
 
     faces = ferplus['pixels'].apply(to_vector).values
     faces = np.concatenate(faces).reshape((faces.size, faces[0].size)).astype(np.float32)
+
+    labels = extract_labels(ferplus)
+    labels = rebalance_labels(labels)
+
+    if include_ck:
+        ck_faces, ck_labels = ck.load_meta()
+        faces = np.concatenate((faces, ck_faces), axis=0)
+        labels = np.concatenate((labels, ck_labels), axis=0)
+
     faces = normalize_pixels(faces)
 
-    labels = pd.DataFrame(
-        [ferplus['neutral'].astype(int), ferplus['happiness'].astype(int), ferplus['surprise'].astype(int),
-         ferplus['sadness'].astype(int), ferplus['anger'].astype(int),
-         ferplus['disgust'].astype(int), ferplus['fear'].astype(int),
-         ferplus['contempt'].astype(int)]).as_matrix().T.astype(np.float32)
-
-    # labels = majority_voting(labels, n_classes=8)
-
-    labels = rebalance_labels(labels)
     labels = scale_labels(labels)
     labels = add_eps(labels)
+
+    if majority_vote:
+        labels = majority_voting(labels, n_classes=8)
 
     if split_data:
         return split(faces, labels)
     else:
         return faces, labels
+
+
+def preprocess_and_save():
+    features, labels = get_data(split_data=False, include_ck=True)
+    np.save(data.FEATURES_FILE, features)
+    np.save(data.LABELS_FILE, labels)
+
+
+def load_from_npy(split_data=False, features_loc=data.FEATURES_FILE, labels_loc=data.LABELS_FILE):
+    if split_data:
+        return split(*unison_shuffled_copies(np.load(features_loc), np.load(labels_loc)))
+    else:
+        return np.load(features_loc), np.load(labels_loc)
 
 
 # TODO: Refactor as soon as model training is fully implemented

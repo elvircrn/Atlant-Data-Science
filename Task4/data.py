@@ -10,3 +10,11 @@ DEFAULT_SCOPE = 'EmoConv'
 
 TRAINING_SCOPE = 'Training_data'
 TEST_SCOPE = 'Test_data'
+
+LABELS = ['neutral', 'happiness', 'surprise', 'sadness', 'anger', 'disgust', 'fear', 'contempt']
+
+FEATURES_FILE = 'Serialized/features.npy'
+LABELS_FILE = 'Serialized/labels.npy'
+
+
+

@@ -67,7 +67,6 @@ def small_vgg(inputs, is_training, scope=data.DEFAULT_SCOPE):
             net = slim.softmax(net, scope='sm1')
         return net
 
-
 _LAYERS = []
 _INPUTS = []
 

@@ -49,7 +49,7 @@ def get_experiment_params():
     return tf.contrib.training.HParams(
         learning_rate=0.00002,
         n_classes=data.N_CLASSES,
-        train_steps=10000,
+        train_steps=90000,
         min_eval_frequency=50,
         architecture=arch.padded_mini_vgg,
         dropout=0.6
@@ -80,7 +80,7 @@ def objective(args):
 
 
 def optimize():
-    enable_hyperopt = True
+    enable_hyperopt = False
     
     if enable_hyperopt:
         space = {
@@ -107,7 +107,7 @@ def experiment_fn(run_config, params):
         save_checkpoints_steps=params.min_eval_frequency)
     estimator = get_estimator(run_config, params)
     # Setup data loaders
-    datasets = preprocess.get_data(split_data=True)
+    datasets = preprocess.load_from_npy(split_data=True)
 
     train_input_fn, train_input_hook = get_train_inputs(
         batch_size=64, datasets=datasets)

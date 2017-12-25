@@ -2,11 +2,13 @@ import cv2
 import numpy as np
 import tensorflow as tf
 
-from facedetect import detect
+import facedetect as fd
 
 import visualize as vz
 import network2
 import architectures
+
+from facedetect import FaceExtractor
 
 
 class FontData:
@@ -41,8 +43,8 @@ def launch_webcam():
 
     while rval:
         rval, frame = vc.read()
-        frame = cv2.flip(frame, 1)
-        full_frame, images, lower_right_corners, extracted_faces = detect(frame)
+        full_frame = cv2.flip(frame, 1)
+        images, lower_right_corners, extracted_faces = FaceExtractor.extract_faces(frame)
 
         if len(images) > 0:
             if enable_predictions:
