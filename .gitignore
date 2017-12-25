@@ -3,6 +3,7 @@ Data/
 ReducedData/
 Predictions/
 Demo/
+Serialized/*.npy
 
 # C++
 *.exe

@@ -386,6 +386,25 @@ Hyperparameters to consider:
 * Dropout ([0.4, 1.0])
 
 
+ssh -L localhost:8888:localhost:8888 -i elvir.pem ubuntu@ec2-204-236-203-94.compute-1.amazonaws.com
+tensorboard --logdir=emotion-aws-train/Data/log --host=localhost --port=6006
+
+
+
+You can port-forward with another ssh command that need not be tied to how you are connecting to the server (as an alternative to the other answer). Thus, the ordering of the below steps is arbitrary.
+
+from your local machine, run
+ssh -N -f -L localhost:16006:localhost:6006 <user@remote>
+
+on the remote machine, run tensorboard --logdir <path>
+(explanation of ssh command:
+
+-N : no remote commands
+
+-f : put ssh in the background
+
+-L <machine1>:<portA>:<machine2>:<portB> : forward <machine2>:<portB> (remote scope) to <machine1>:<portA> (local scope)
+
 
 
 
