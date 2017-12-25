@@ -62,7 +62,7 @@ def launch_webcam():
                 # label = labels[prediction] if np.random.rand() < 0.8 else 'ugly'
                 label = labels[prediction]
                 cv2.putText(full_frame, label,
-                            tuple(lower_right_corner),
+                            tuple(reversed(lower_right_corner)),
                             FontData.font,
                             FontData.font_scale,
                             FontData.font_color,
