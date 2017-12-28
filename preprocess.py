@@ -30,6 +30,11 @@ def majority_voting(labels, n_classes):
 
 def split(faces, labels):
     set_distribution = [0.94, 0.03, 0.03]
+    total_size = len(faces)
+    label_ids = np.argmax(labels, axis=1)
+    labels_ids_cnt = np.array([np.sum(label_ids == label) for label in range(8)])
+    distribution = labels_ids_cnt / total_size
+    buckets = [faces[np.array(label_ids == label_id)] for label_id in range(8)]
     datasets = list(zip(perc_split(faces, set_distribution), perc_split(labels, set_distribution)))
     return datasets
 
@@ -113,10 +118,10 @@ def save(features, labels):
     np.save(data.LABELS_FILE, labels)
 
 
-def load_from_npy(split_data=False, features_loc=data.FEATURES_FILE, labels_loc=data.LABELS_FILE, shuffle=True):
+def load_from_npy(split_data=False, features_loc=data.FEATURES_FILE, labels_loc=data.LABELS_FILE, shuffle_data=True):
     features, labels = np.load(features_loc), np.load(labels_loc)
 
-    if shuffle:
+    if shuffle_data:
         features, labels = unison_shuffled_copies(np.load(features_loc), np.load(labels_loc))
 
     if split_data:

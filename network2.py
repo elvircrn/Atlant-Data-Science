@@ -103,7 +103,7 @@ def experiment_fn(run_config, params):
         save_checkpoints_steps=params.min_eval_frequency)
     estimator = get_estimator(run_config, params)
     # Setup data loaders
-    datasets = preprocess.load_from_npy(split_data=True, shuffle=False)
+    datasets = preprocess.load_from_npy(split_data=True, shuffle_data=False)
 
     train_input_fn, train_input_hook = get_train_inputs(
         batch_size=64, datasets=datasets)
