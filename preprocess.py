@@ -73,6 +73,7 @@ def get_data(split_data=False, include_ck=False):
     del fer2013['Usage']
 
     ferplus = pd.concat([fer2013, fer2013new], axis=1)
+    # noinspection PyUnresolvedReferences
     ferplus = ferplus.dropna()
     ferplus = delete_non_face(ferplus)
     ferplus = delete_unknown(ferplus)
@@ -104,15 +105,24 @@ def get_data(split_data=False, include_ck=False):
 
 def preprocess_and_save():
     features, labels = get_data(split_data=False, include_ck=True)
+    save(features, labels)
+
+
+def save(features, labels):
     np.save(data.FEATURES_FILE, features)
     np.save(data.LABELS_FILE, labels)
 
 
-def load_from_npy(split_data=False, features_loc=data.FEATURES_FILE, labels_loc=data.LABELS_FILE):
+def load_from_npy(split_data=False, features_loc=data.FEATURES_FILE, labels_loc=data.LABELS_FILE, shuffle=True):
+    features, labels = np.load(features_loc), np.load(labels_loc)
+
+    if shuffle:
+        features, labels = unison_shuffled_copies(np.load(features_loc), np.load(labels_loc))
+
     if split_data:
-        return split(*unison_shuffled_copies(np.load(features_loc), np.load(labels_loc)))
+        return split(features, labels)
     else:
-        return np.load(features_loc), np.load(labels_loc)
+        return features, labels
 
 
 # TODO: Refactor as soon as model training is fully implemented
@@ -126,5 +136,3 @@ def get_test():
 
 def get_validation():
     return get_data(split_data=True)[2]
-
-

@@ -48,7 +48,7 @@ def get_experiment_params():
         train_steps=90000,
         min_eval_frequency=50,
         architecture=arch.padded_mini_vgg,
-        dropout=0.6
+        dropout=0.5
     )
 
 
@@ -103,7 +103,7 @@ def experiment_fn(run_config, params):
         save_checkpoints_steps=params.min_eval_frequency)
     estimator = get_estimator(run_config, params)
     # Setup data loaders
-    datasets = preprocess.load_from_npy(split_data=True)
+    datasets = preprocess.load_from_npy(split_data=True, shuffle=False)
 
     train_input_fn, train_input_hook = get_train_inputs(
         batch_size=64, datasets=datasets)
