@@ -336,13 +336,13 @@ def run_network(enable_gpu, enable_hyperopt):
             initialize_flags()
             tf.app.run(
                 main=run_experiment,
-                argv=(enable_gpu, enable_hyperopt)
+                argv=[enable_gpu, enable_hyperopt]
             )
     else:
         initialize_flags()
         tf.app.run(
             main=run_experiment,
-            argv=(enable_gpu, enable_hyperopt)
+            argv=[enable_gpu, enable_hyperopt]
         )
 
 
