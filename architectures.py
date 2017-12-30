@@ -84,7 +84,7 @@ def padded_mini_vgg(inputs, is_training, dropout, scope=data.DEFAULT_SCOPE):
         with slim.arg_scope(
                 [slim.conv2d, slim.fully_connected],
                 weights_initializer=tf.contrib.layers.xavier_initializer(),
-                activation_fn=tf.nn.relu):
+                activation_fn=tf.nn.tanh):
             _INPUTS.append(inputs)
             net = slim.repeat(inputs, 2, slim.conv2d, 64, [3, 3], padding='SAME', scope='conv1')
             _LAYERS.append(net)

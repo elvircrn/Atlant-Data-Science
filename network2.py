@@ -12,7 +12,7 @@ import architectures as arch
 from hyperopt import hp
 
 
-# Run only once in main
+# Run only once
 def initialize_flags():
     tf.logging.set_verbosity(tf.logging.DEBUG)
     tf.app.flags.DEFINE_string(
@@ -44,7 +44,7 @@ def get_run_config(model_id=None):
 
 def get_experiment_params():
     return tf.contrib.training.HParams(
-        learning_rate=0.00002,
+        learning_rate=0.00000002,
         n_classes=data.N_CLASSES,
         train_steps=70000,
         min_eval_frequency=50,
@@ -94,7 +94,8 @@ def objective(args):
 
 def run_experiment(argv=None):
     enable_hyperopt = argv[1]
-    
+    print('Hyper opt enabled: {}'.format(enable_hyperopt))
+
     if enable_hyperopt:
         space = {
             'learn_rate': hp.uniform('learn_rate', 0.00000001, 1.0),
@@ -120,12 +121,13 @@ def experiment_fn(run_config, params):
     datasets = Serializer.load_npy_datasets()
 
     train_input_fn, train_input_hook = get_train_inputs(
-        batch_size=64, datasets=datasets)
-    if params.validation:
-        eval_input_fn, eval_input_hook = get_validation_inputs(batch_size=64, datasets=datasets)
-    else:
-        eval_input_fn, eval_input_hook = get_test_inputs(
-            batch_size=64, datasets=datasets)
+        batch_size=32, datasets=datasets)
+    # if params.validation:
+    #     eval_input_fn, eval_input_hook = get_validation_inputs(batch_size=64, datasets=datasets)
+    # else:
+    #
+    eval_input_fn, eval_input_hook = get_test_inputs(
+        batch_size=128, datasets=datasets)
 
     # Define the experiment
     experiment = tf.contrib.learn.Experiment(
@@ -252,7 +254,7 @@ def get_train_inputs(batch_size, datasets):
             dataset = tf.contrib.data.Dataset.from_tensor_slices(
                 (images_placeholder, labels_placeholder))
             dataset = dataset.repeat(None)  # Infinite iterations
-            dataset = dataset.shuffle(buffer_size=3000)
+            dataset = dataset.shuffle(buffer_size=10000)
             dataset = dataset.batch(batch_size)
             iterator = dataset.make_initializable_iterator()
             next_example, next_label = iterator.get_next()
@@ -299,35 +301,35 @@ def get_test_inputs(batch_size, datasets):
     return test_inputs, iterator_initializer_hook
 
 
-def get_validation_inputs(batch_size, datasets):
-    iterator_initializer_hook = IteratorInitializerHook()
-
-    def validation_inputs():
-        with tf.name_scope(data.CV_SCOPE):
-            images = datasets[2][0].reshape([-1, 48, 48, 1])
-            labels = datasets[2][1]
-            # Define placeholders
-            images_placeholder = tf.placeholder(
-                images.dtype, images.shape)
-            labels_placeholder = tf.placeholder(
-                labels.dtype, labels.shape)
-            # Build dataset iterator
-            dataset = tf.contrib.data.Dataset.from_tensor_slices(
-                (images_placeholder, labels_placeholder))
-            dataset = dataset.shuffle(buffer_size=500)
-            dataset = dataset.batch(batch_size)
-            iterator = dataset.make_initializable_iterator()
-            next_example, next_label = iterator.get_next()
-            # Set run-hook to initialize iterator
-            iterator_initializer_hook.iterator_initializer_func = \
-                lambda sess: sess.run(
-                    iterator.initializer,
-                    feed_dict={images_placeholder: images,
-                               labels_placeholder: labels})
-            return next_example, next_label
-
-    # Return function and hook
-    return validation_inputs, iterator_initializer_hook
+# def get_validation_inputs(batch_size, datasets):
+#     iterator_initializer_hook = IteratorInitializerHook()
+#
+#     def validation_inputs():
+#         with tf.name_scope(data.CV_SCOPE):
+#             images = datasets[2][0].reshape([-1, 48, 48, 1])
+#             labels = datasets[2][1]
+#             # Define placeholders
+#             images_placeholder = tf.placeholder(
+#                 images.dtype, images.shape)
+#             labels_placeholder = tf.placeholder(
+#                 labels.dtype, labels.shape)
+#             # Build dataset iterator
+#             dataset = tf.contrib.data.Dataset.from_tensor_slices(
+#                 (images_placeholder, labels_placeholder))
+#             dataset = dataset.shuffle(buffer_size=500)
+#             dataset = dataset.batch(batch_size)
+#             iterator = dataset.make_initializable_iterator()
+#             next_example, next_label = iterator.get_next()
+#             # Set run-hook to initialize iterator
+#             iterator_initializer_hook.iterator_initializer_func = \
+#                 lambda sess: sess.run(
+#                     iterator.initializer,
+#                     feed_dict={images_placeholder: images,
+#                                labels_placeholder: labels})
+#             return next_example, next_label
+#
+#     # Return function and hook
+#     return validation_inputs, iterator_initializer_hook
 
 
 def run_network(enable_gpu, enable_hyperopt):
