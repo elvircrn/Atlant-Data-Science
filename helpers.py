@@ -25,7 +25,17 @@ def perc_split(elements, percentages):
     return split_elements
 
 
+def merge(groups):
+    return np.concatenate(tuple(group for group in groups))
+
+
+def shuffle(a):
+    p = np.random.permutation(len(a))
+    return a[p]
+
+
 def unison_shuffled_copies(a, b):
     assert len(a) == len(b)
     p = np.random.permutation(len(a))
     return a[p], b[p]
+

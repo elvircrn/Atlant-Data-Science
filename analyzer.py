@@ -31,6 +31,7 @@ def plot_emo_hist(data):
     plt.savefig('Data/Graphs/emo_cnt.png')
     return data
 
+
 def emotion_cnt(data):
     print(data)
     data['emo_id'] = data.idxmax()
@@ -83,9 +84,11 @@ def cross_val_analysis():
 def emo_cnt_analysis():
     data = get_data()
     (plot_emo_hist
-        (emotion_cnt
-            (delete_non_numeric
-                (delete_weird(data)))))
+    (emotion_cnt
+     (delete_non_numeric
+      (delete_weird(data)))))
     return data
 
 
+def label_cnt(labels):
+    return [np.sum(np.argmax(labels, axis=1) == label_id) for label_id in range(8)]

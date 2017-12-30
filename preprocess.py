@@ -4,7 +4,7 @@ import numpy as np
 import cohn_kanade as ck
 import data
 
-from helpers import perc_split, unison_shuffled_copies
+from helpers import perc_split, unison_shuffled_copies, shuffle
 from sklearn.preprocessing import normalize
 
 
@@ -28,13 +28,29 @@ def majority_voting(labels, n_classes):
     return major_labels
 
 
+def split_emotions(features, labels):
+    label_ids = np.argmax(labels, axis=1)
+    emotion_groups = [(features[np.array(label_ids == label_id)], labels[np.array(label_ids == label_id)]) for label_id
+                      in
+                      range(8)]
+    return emotion_groups
+
+
 def split(faces, labels):
     set_distribution = [0.94, 0.03, 0.03]
     total_size = len(faces)
     label_ids = np.argmax(labels, axis=1)
     labels_ids_cnt = np.array([np.sum(label_ids == label) for label in range(8)])
-    distribution = labels_ids_cnt / total_size
-    buckets = [faces[np.array(label_ids == label_id)] for label_id in range(8)]
+    label_distribution = labels_ids_cnt / total_size
+    emotion_groups = [faces[np.array(label_ids == label_id)] for label_id in range(8)]
+    total = np.sum([len(emotion_groups[i]) for i in range(8)])
+    label_distribution = np.array([len(emotion_groups[i]) for i in range(8)]) / total
+    subset_distribution = [[label_dist * dist for label_dist in label_distribution] for dist in set_distribution]
+
+    shuffled_groups = [shuffle(group) for group in emotion_groups]
+
+    [perc_split(group, set_distribution) for group in shuffled_groups]
+
     datasets = list(zip(perc_split(faces, set_distribution), perc_split(labels, set_distribution)))
     return datasets
 
