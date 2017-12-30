@@ -23,6 +23,19 @@ class Serializer:
 
         Serializer._datasets = None
 
+
+    @staticmethod
+    def shuffle_and_serialize(datasets):
+        datasets[0] = helpers.unison_shuffled_copies(datasets[0][0], datasets[0][1])
+        np.save(data.TRAIN_FEATURES_FILE, datasets[0][0])
+        np.save(data.TRAIN_LABELS_FILE, datasets[0][1])
+        np.save(data.TEST_FEATURES_FILE, datasets[1][0])
+        np.save(data.TEST_LABELS_FILE, datasets[1][1])
+        np.save(data.CV_FEATURES_FILE, datasets[2][0])
+        np.save(data.CV_LABELS_FILE, datasets[2][1])
+        Serializer._datasets = datasets
+
+
     @staticmethod
     def load_npy_datasets():
         if Serializer._datasets is None:
