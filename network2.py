@@ -93,7 +93,7 @@ def objective(args):
 
 
 def run_experiment(argv=None):
-    enable_hyperopt = argv[1]
+    enable_hyperopt = True
     print('Hyper opt enabled: {}'.format(enable_hyperopt))
 
     if enable_hyperopt:
@@ -335,14 +335,12 @@ def run_network(enable_gpu, enable_hyperopt):
         with tf.device("/gpu:0"):
             initialize_flags()
             tf.app.run(
-                main=run_experiment,
-                argv=[enable_gpu, enable_hyperopt]
+                main=run_experiment
             )
     else:
         initialize_flags()
         tf.app.run(
-            main=run_experiment,
-            argv=[enable_gpu, enable_hyperopt]
+            main=run_experiment
         )
 
 
