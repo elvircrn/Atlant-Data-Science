@@ -10,11 +10,20 @@ DEFAULT_SCOPE = 'EmoConv'
 
 TRAINING_SCOPE = 'Training_data'
 TEST_SCOPE = 'Test_data'
+CV_SCOPE = 'CV_data'
 
 LABELS = ['neutral', 'happiness', 'surprise', 'sadness', 'anger', 'disgust', 'fear', 'contempt']
 
 FEATURES_FILE = 'Serialized/features.npy'
 LABELS_FILE = 'Serialized/labels.npy'
+
+TRAIN_FEATURES_FILE = 'Serialized/train_features.npy'
+TEST_FEATURES_FILE = 'Serialized/test_features.npy'
+CV_FEATURES_FILE = 'Serialized/cv_features.npy'
+
+TRAIN_LABELS_FILE = 'Serialized/train_labels.npy'
+TEST_LABELS_FILE = 'Serialized/test_labels.npy'
+CV_LABELS_FILE = 'Serialized/cv_labels.npy'
 
 MAIN_WINDOW_NAME = "Emotion"
 EXTRACTED_WINDOW_NAME = "Extracted faces"

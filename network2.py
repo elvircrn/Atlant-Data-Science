@@ -3,6 +3,7 @@ import numpy as np
 from tensorflow.contrib.learn import ModeKeys
 from tensorflow.contrib.learn import learn_runner
 
+from serializer import Serializer
 import preprocess
 import data
 import hyperopt
@@ -45,10 +46,23 @@ def get_experiment_params():
     return tf.contrib.training.HParams(
         learning_rate=0.00002,
         n_classes=data.N_CLASSES,
-        train_steps=90000,
+        train_steps=70000,
         min_eval_frequency=50,
         architecture=arch.padded_mini_vgg,
-        dropout=0.5
+        dropout=0.5,
+        validation=False
+    )
+
+
+def get_validation_params():
+    return tf.contrib.training.HParams(
+        learning_rate=0.0,
+        n_classes=data.N_CLASSES,
+        train_steps=1,
+        min_eval_frequency=1,
+        architecture=arch.padded_mini_vgg,
+        dropout=1.0,
+        validation=True
     )
 
 
@@ -69,14 +83,17 @@ def objective(args):
     params.learning_rate = args['learn_rate']
     params.dropout = args['dropout']
     mid += 1
-    run_config = get_run_config(mid)
-    loss = run_and_get_loss(params, run_config)
+    run_config = get_run_config(model_id=mid)
+    test_loss = run_and_get_loss(params, run_config)
+    validation_loss = run_and_get_loss(get_validation_params(), run_config)
 
-    return loss
+    print('Validation loss for model #{}: {}'.format(mid, validation_loss))
+
+    return validation_loss
 
 
-def optimize():
-    enable_hyperopt = False
+def run_experiment(argv=None):
+    enable_hyperopt = argv[1]
     
     if enable_hyperopt:
         space = {
@@ -84,7 +101,7 @@ def optimize():
             'dropout': hp.uniform('dropout', 0.4, 1.0)
         }
 
-        best_model = hyperopt.fmin(objective, space, algo=hyperopt.tpe.suggest, max_evals=30)
+        best_model = hyperopt.fmin(objective, space, algo=hyperopt.tpe.suggest, max_evals=4)
 
         print(best_model)
         print(hyperopt.space_eval(space, best_model))
@@ -94,21 +111,22 @@ def optimize():
         run_and_get_loss(params, run_config)
 
 
-def run_experiment(argv=None):
-    optimize()
-
-
 def experiment_fn(run_config, params):
     run_config = run_config.replace(
         save_checkpoints_steps=params.min_eval_frequency)
     estimator = get_estimator(run_config, params)
+
     # Setup data loaders
-    datasets = preprocess.load_from_npy(split_data=True, shuffle_data=False)
+    datasets = Serializer.load_npy_datasets()
 
     train_input_fn, train_input_hook = get_train_inputs(
         batch_size=64, datasets=datasets)
-    eval_input_fn, eval_input_hook = get_test_inputs(
-        batch_size=64, datasets=datasets)
+    if params.validation:
+        eval_input_fn, eval_input_hook = get_validation_inputs(batch_size=64, datasets=datasets)
+    else:
+        eval_input_fn, eval_input_hook = get_test_inputs(
+            batch_size=64, datasets=datasets)
+
     # Define the experiment
     experiment = tf.contrib.learn.Experiment(
         estimator=estimator,  # Estimator
@@ -145,6 +163,7 @@ def model_fn(features, labels, mode, params):
     loss = None
     train_op = None
     eval_metric_ops = {}
+
     if mode != ModeKeys.INFER:
         loss = tf.losses.softmax_cross_entropy(
             labels,
@@ -233,7 +252,7 @@ def get_train_inputs(batch_size, datasets):
             dataset = tf.contrib.data.Dataset.from_tensor_slices(
                 (images_placeholder, labels_placeholder))
             dataset = dataset.repeat(None)  # Infinite iterations
-            dataset = dataset.shuffle(buffer_size=10000)
+            dataset = dataset.shuffle(buffer_size=3000)
             dataset = dataset.batch(batch_size)
             iterator = dataset.make_initializable_iterator()
             next_example, next_label = iterator.get_next()
@@ -280,19 +299,50 @@ def get_test_inputs(batch_size, datasets):
     return test_inputs, iterator_initializer_hook
 
 
-def run_network():
-    enable_gpu = True
+def get_validation_inputs(batch_size, datasets):
+    iterator_initializer_hook = IteratorInitializerHook()
 
+    def validation_inputs():
+        with tf.name_scope(data.CV_SCOPE):
+            images = datasets[2][0].reshape([-1, 48, 48, 1])
+            labels = datasets[2][1]
+            # Define placeholders
+            images_placeholder = tf.placeholder(
+                images.dtype, images.shape)
+            labels_placeholder = tf.placeholder(
+                labels.dtype, labels.shape)
+            # Build dataset iterator
+            dataset = tf.contrib.data.Dataset.from_tensor_slices(
+                (images_placeholder, labels_placeholder))
+            dataset = dataset.shuffle(buffer_size=500)
+            dataset = dataset.batch(batch_size)
+            iterator = dataset.make_initializable_iterator()
+            next_example, next_label = iterator.get_next()
+            # Set run-hook to initialize iterator
+            iterator_initializer_hook.iterator_initializer_func = \
+                lambda sess: sess.run(
+                    iterator.initializer,
+                    feed_dict={images_placeholder: images,
+                               labels_placeholder: labels})
+            return next_example, next_label
+
+    # Return function and hook
+    return validation_inputs, iterator_initializer_hook
+
+
+def run_network(enable_gpu, enable_hyperopt):
     if enable_gpu:
         with tf.device("/gpu:0"):
             initialize_flags()
             tf.app.run(
-                main=run_experiment
+                main=run_experiment,
+                argv=(enable_gpu, enable_hyperopt)
             )
     else:
         initialize_flags()
         tf.app.run(
-            main=run_experiment
+            main=run_experiment,
+            argv=(enable_gpu, enable_hyperopt)
         )
 
 

@@ -4,13 +4,14 @@ import matplotlib.pyplot as plt
 from hyperopt import hp
 import hyperopt
 
+
 class DataSet:
     VALID_SIZE = 10
     TEST_SIZE = 10
     TRAIN_SIZE = 200
 
     train = []
-    test  = []
+    test = []
     validation = []
 
     @staticmethod
@@ -18,14 +19,12 @@ class DataSet:
         if not DataSet.validation:
             DataSet.validation = sample(DataSet.VALID_SIZE)
         return DataSet.validation
-        
 
     @staticmethod
     def get_test():
         if not DataSet.test:
             DataSet.test = sample(DataSet.TEST_SIZE)
         return DataSet.test
-
 
     @staticmethod
     def get_train():
@@ -56,6 +55,7 @@ def fit(x, y, degree):
     model = np.poly1d(np.polyfit(x, y, degree))
     return model
 
+
 def get_error(model, truth):
     return np.sum(np.square(model(truth[0]) - truth[1]))
 
@@ -82,23 +82,13 @@ def optimize():
     }
 
     best_model = hyperopt.fmin(objective, space, algo=hyperopt.tpe.suggest, max_evals=15)
-    
+
     print('Best model: {}', best_model)
     print('Best error: {}', hyperopt.space_eval(space, best_model))
     print('Done')
-    
-    plot_error()
 
+    plot_error()
 
 
 def run_experiment():
     optimize()
-    
-
-
-
-
-
-
-    
-

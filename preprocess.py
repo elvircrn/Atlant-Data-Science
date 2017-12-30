@@ -5,6 +5,7 @@ import cohn_kanade as ck
 import data
 
 from helpers import perc_split, unison_shuffled_copies, shuffle
+import helpers as hlp
 from sklearn.preprocessing import normalize
 
 
@@ -36,22 +37,23 @@ def split_emotions(features, labels):
     return emotion_groups
 
 
-def split(faces, labels):
+def split(features, labels):
+    """
+    :param features:
+    :param labels:
+    :return: dataset[<set>][<feature>/<label>]
+    Intermediate data state: dataset[<emotion id>][<feature>/<label>][<set>]
+    """
+    emotion_groups = split_emotions(features, labels)
     set_distribution = [0.94, 0.03, 0.03]
-    total_size = len(faces)
-    label_ids = np.argmax(labels, axis=1)
-    labels_ids_cnt = np.array([np.sum(label_ids == label) for label in range(8)])
-    label_distribution = labels_ids_cnt / total_size
-    emotion_groups = [faces[np.array(label_ids == label_id)] for label_id in range(8)]
-    total = np.sum([len(emotion_groups[i]) for i in range(8)])
-    label_distribution = np.array([len(emotion_groups[i]) for i in range(8)]) / total
-    subset_distribution = [[label_dist * dist for label_dist in label_distribution] for dist in set_distribution]
 
-    shuffled_groups = [shuffle(group) for group in emotion_groups]
+    dataset = [(perc_split(group[0], set_distribution), perc_split(group[1], set_distribution))
+               for
+               group in emotion_groups]
 
-    [perc_split(group, set_distribution) for group in shuffled_groups]
-
-    datasets = list(zip(perc_split(faces, set_distribution), perc_split(labels, set_distribution)))
+    datasets = [(hlp.merge([dataset[emotion_id][0][set_id] for emotion_id in range(data.N_CLASSES)]),
+                 hlp.merge([dataset[emotion_id][1][set_id] for emotion_id in range(data.N_CLASSES)])) for set_id in
+                range(3)]
     return datasets
 
 
