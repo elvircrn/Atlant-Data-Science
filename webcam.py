@@ -125,6 +125,9 @@ def launch_webcam():
             else:
                 predictions = np.zeros(len(images))
 
+            if len(extracted_faces) == 0:
+                continue
+
             vis = np.concatenate(extracted_faces, axis=1)
             cv2.imshow(data.EXTRACTED_WINDOW_NAME, vis)
 

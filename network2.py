@@ -8,6 +8,7 @@ import preprocess
 import data
 import hyperopt
 import architectures as arch
+import cost_functions as cf
 
 from hyperopt import hp
 
@@ -44,13 +45,14 @@ def get_run_config(model_id=None):
 
 def get_experiment_params():
     return tf.contrib.training.HParams(
-        learning_rate=0.00000002,
+        learning_rate=0.000002,
         n_classes=data.N_CLASSES,
         train_steps=70000,
-        min_eval_frequency=50,
+        min_eval_frequency=5,
         architecture=arch.padded_mini_vgg,
         dropout=0.7,
-        validation=False
+        validation=False,
+        label_type=cf.LabelType.cross_entropy
     )
 
 
@@ -62,7 +64,8 @@ def get_validation_params():
         min_eval_frequency=1,
         architecture=arch.padded_mini_vgg,
         dropout=1.0,
-        validation=True
+        validation=True,
+        label_type=cf.LabelType.cross_entropy
     )
 
 
@@ -93,7 +96,7 @@ def objective(args):
 
 
 def run_experiment(argv=None):
-    enable_hyperopt = True
+    enable_hyperopt = False
     print('Hyper opt enabled: {}'.format(enable_hyperopt))
 
     if enable_hyperopt:
@@ -118,8 +121,8 @@ def experiment_fn(run_config, params):
     estimator = get_estimator(run_config, params)
 
     # Setup data loaders
-    datasets = Serializer.load_npy_datasets()
-    train_input_fn, train_input_hook = get_train_inputs(batch_size=32, datasets=datasets)
+    datasets = Serializer.load_npy_datasets(params.label_type)
+    train_input_fn, train_input_hook = get_train_inputs(batch_size=64, datasets=datasets)
     if params.validation:
         eval_input_fn, eval_input_hook = get_validation_inputs(batch_size=64, datasets=datasets)
     else:
@@ -164,9 +167,14 @@ def model_fn(features, labels, mode, params):
     eval_metric_ops = {}
 
     if mode != ModeKeys.INFER:
-        loss = tf.losses.softmax_cross_entropy(
-            labels,
-            logits=logits)
+        if params.label_type == cf.LabelType.majority_vote:
+            loss = tf.losses.softmax_cross_entropy(
+                onehot_labels=labels,
+                logits=logits)
+        elif params.label_type == cf.LabelType.cross_entropy:
+            loss = tf.losses.log_loss(
+                labels=labels,
+                predictions=logits)
         train_op = get_train_op_fn(loss, params)
         eval_metric_ops = get_eval_metric_ops(labels, predictions)
     return tf.estimator.EstimatorSpec(
@@ -251,7 +259,7 @@ def get_train_inputs(batch_size, datasets):
             dataset = tf.contrib.data.Dataset.from_tensor_slices(
                 (images_placeholder, labels_placeholder))
             dataset = dataset.repeat(None)  # Infinite iterations
-            dataset = dataset.shuffle(buffer_size=datasets[0][0].shape[0])
+            dataset = dataset.shuffle(buffer_size=10000)
             dataset = dataset.batch(batch_size)
             iterator = dataset.make_initializable_iterator()
             next_example, next_label = iterator.get_next()
@@ -261,6 +269,7 @@ def get_train_inputs(batch_size, datasets):
                     iterator.initializer,
                     feed_dict={images_placeholder: images,
                                labels_placeholder: labels})
+            next_label = tf.Print(next_label, [tf.argmax(next_label, axis=1)], message="Train labels: ")
             # Return batched (features, labels)
             return next_example, next_label
 
@@ -283,7 +292,6 @@ def get_test_inputs(batch_size, datasets):
             # Build dataset iterator
             dataset = tf.contrib.data.Dataset.from_tensor_slices(
                 (images_placeholder, labels_placeholder))
-            dataset = dataset.shuffle(buffer_size=datasets[1][0].shape[0])
             dataset = dataset.batch(batch_size)
             iterator = dataset.make_initializable_iterator()
             next_example, next_label = iterator.get_next()
@@ -293,6 +301,7 @@ def get_test_inputs(batch_size, datasets):
                     iterator.initializer,
                     feed_dict={images_placeholder: images,
                                labels_placeholder: labels})
+            next_label = tf.Print(next_label, [tf.argmax(next_label, axis=1)], message="Test labels: ")
             return next_example, next_label
 
     # Return function and hook
@@ -342,6 +351,7 @@ def run_network(enable_gpu, enable_hyperopt):
         tf.app.run(
             main=run_experiment
         )
+    tf.global_variables_initializer()
 
 
 def predict(estimator, images):

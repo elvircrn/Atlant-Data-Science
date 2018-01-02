@@ -57,6 +57,15 @@ def split(features, labels):
     return datasets
 
 
+def downsample(features, labels):
+    emotion_groups = split_emotions(features, labels)
+    emotion_groups[0] = emotion_groups[0][0][0:9000], emotion_groups[0][1][0:9000]
+    emotion_groups[1] = emotion_groups[1][0][0:7000], emotion_groups[1][1][0:7000]
+
+    return hlp.merge([emotion_groups[emotion_id][0] for emotion_id in range(data.N_CLASSES)]), hlp.merge(
+        [emotion_groups[emotion_id][1] for emotion_id in range(data.N_CLASSES)])
+
+
 def normalize_pixels(faces):
     faces = normalize(faces, axis=0, norm='max')
     return faces
