@@ -45,10 +45,6 @@ class Serializer:
                                      np.load(data.TEST_LABELS_FILE)],
                                     [np.load(data.CV_FEATURES_FILE).astype(np.float32),
                                      np.load(data.CV_LABELS_FILE)]]
-        if shuffle_dataset:
-            for i in range(3):
-                Serializer._datasets[i] = helpers.unison_shuffled_copies(Serializer._datasets[i][0],
-                                                                         Serializer._datasets[i][1])
 
         # TODO: Move this to the preprocessing pipeline
         if label_type == cf.LabelType.majority_vote:
@@ -58,12 +54,15 @@ class Serializer:
         else:
             raise Exception("Invalid label type passed")
 
-        datasets = Serializer._datasets
-
         if downsample:
-            datasets[0] = preprocess.downsample(*datasets[0])
+            Serializer._datasets[0] = preprocess.downsample(*Serializer._datasets[0])
 
-        return datasets
+        if shuffle_dataset:
+            for i in range(3):
+                Serializer._datasets[i] = helpers.unison_shuffled_copies(Serializer._datasets[i][0],
+                                                                         Serializer._datasets[i][1])
+
+        return Serializer._datasets
 
     # TODO: Move this to the preprocessing pipeline
     @staticmethod

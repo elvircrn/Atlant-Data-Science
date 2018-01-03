@@ -12,7 +12,7 @@ def mini_vgg(inputs, is_training, scope=data.DEFAULT_SCOPE):
         with slim.arg_scope(
                 [slim.conv2d, slim.fully_connected],
                 weights_initializer=tf.contrib.layers.xavier_initializer(),
-                activation_fn=tf.nn.relu):
+                activation_fn=tf.nn.tanh):
             # -4
             net = slim.repeat(inputs, 2, slim.conv2d, 64, [3, 3], padding='VALID', scope='conv1')
             # / 2
@@ -34,11 +34,15 @@ def mini_vgg(inputs, is_training, scope=data.DEFAULT_SCOPE):
             net = slim.flatten(net)
             net = slim.fully_connected(net, data.N_CLASSES, activation_fn=None, scope='fc1')
 
+            logits = net
+
             net = slim.softmax(net, scope='sm1')
-        return net
+
+            softmax = net
+        return logits, softmax
 
 
-def small_vgg(inputs, is_training, scope=data.DEFAULT_SCOPE):
+def small_vgg(inputs, is_training, dropout, scope=data.DEFAULT_SCOPE):
     with tf.variable_scope(scope):
         with slim.arg_scope(
                 [slim.conv2d, slim.fully_connected],
@@ -46,26 +50,29 @@ def small_vgg(inputs, is_training, scope=data.DEFAULT_SCOPE):
                 activation_fn=tf.nn.relu):
             net = slim.repeat(inputs, 2, slim.conv2d, 64, [3, 3], padding='VALID', scope='conv1')
             net = slim.max_pool2d(net, 2, stride=2, scope='pool1')
-            net = slim.dropout(net, is_training=is_training, scope='dropout1')
+            net = slim.dropout(net, keep_prob=dropout, is_training=is_training, scope='dropout1')
 
             net = slim.repeat(net, 3, slim.conv2d, 128, [3, 3], padding='VALID', scope='conv2')
             net = slim.max_pool2d(net, 2, stride=2, scope='pool2')
-            net = slim.dropout(net, is_training=is_training, scope='dropout2')
+            net = slim.dropout(net, keep_prob=dropout, is_training=is_training, scope='dropout2')
 
             net = slim.repeat(net, 3, slim.conv2d, 256, [3, 3], padding='VALID', scope='conv3')
             net = slim.max_pool2d(net, 2, stride=2, scope='pool3')
-            net = slim.dropout(net, is_training=is_training, scope='dropout3')
-
-            # TODO: Add L2 on last layer
-            net = slim.repeat(net, 3, slim.conv2d, 256, [3, 3], padding='VALID', scope='conv4')
-            net = slim.max_pool2d(net, 2, stride=2, scope='pool4')
-            net = slim.dropout(net, is_training=is_training, scope='dropout4')
+            net = slim.dropout(net, keep_prob=dropout, is_training=is_training, scope='dropout3')
 
             net = slim.flatten(net)
             net = slim.fully_connected(net, data.N_CLASSES, activation_fn=None, scope='fc1')
-
+            logits = net
             net = slim.softmax(net, scope='sm1')
-        return net
+
+            net = tf.Print(net, [tf.reduce_max(net, reduction_indices=[1])], message='Max out: ', summarize=20)
+            net = tf.Print(net, [tf.reduce_min(net, reduction_indices=[1])], message='Min out: ', summarize=20)
+            net = slim.softmax(net, scope='sm1')
+            net = tf.Print(net, [tf.argmax(net, axis=1)], message='Net out argmax: ', summarize=100)
+            net = tf.Print(net, [tf.reduce_max(net, axis=1)], message='Net out max prob: ', summarize=100)
+            net = tf.Print(net, [net], message='Net out: ')
+            softmax = net
+        return logits, softmax
 
 
 _LAYERS = []
@@ -78,6 +85,59 @@ def get_layers():
 
 def get_inputs():
     return _INPUTS[0]
+
+
+def regularized_padded_mini_vgg(inputs, is_training, dropout, scope=data.DEFAULT_SCOPE):
+    with tf.variable_scope(scope):
+        with slim.arg_scope(
+                [slim.conv2d, slim.fully_connected],
+                weights_initializer=tf.contrib.layers.xavier_initializer(),
+                activation_fn=tf.nn.relu):
+            _INPUTS.append(inputs)
+            net = slim.repeat(inputs, 2, slim.conv2d, 64, [3, 3], padding='SAME', scope='conv1')
+            _LAYERS.append(net)
+            net = slim.max_pool2d(net, 2, stride=2, scope='pool1')
+            _LAYERS.append(net)
+            net = slim.dropout(net, keep_prob=dropout, is_training=is_training, scope='dropout1')
+            _LAYERS.append(net)
+
+            net = slim.repeat(net, 3, slim.conv2d, 128, [3, 3], padding='SAME', scope='conv2')
+            _LAYERS.append(net)
+            net = slim.max_pool2d(net, 2, stride=2, scope='pool2')
+            _LAYERS.append(net)
+            net = slim.dropout(net, keep_prob=dropout, is_training=is_training, scope='dropout2')
+            _LAYERS.append(net)
+
+            net = slim.repeat(net, 3, slim.conv2d, 256, [3, 3], padding='SAME', scope='conv3')
+            _LAYERS.append(net)
+            net = slim.max_pool2d(net, 2, stride=2, scope='pool3')
+            _LAYERS.append(net)
+            net = slim.dropout(net, keep_prob=dropout, is_training=is_training, scope='dropout3')
+            _LAYERS.append(net)
+
+            # TODO: Add L2 on last layer
+            net = slim.repeat(net, 3, slim.conv2d, 256, [3, 3], padding='SAME', scope='conv4')
+            _LAYERS.append(net)
+            net = slim.max_pool2d(net, 2, stride=2, scope='pool4')
+            _LAYERS.append(net)
+            net = slim.dropout(net, keep_prob=dropout, is_training=is_training, scope='dropout4')
+            _LAYERS.append(net)
+
+            net = slim.flatten(net)
+            net = slim.fully_connected(net, data.N_CLASSES, activation_fn=None, scope='fc1',
+                                       weights_regularizer=slim.l2_regularizer(0.0005))
+            net = tf.Print(net, [net], message='Flatten out: ', summarize=20)
+
+            logits = net
+
+            net = tf.Print(net, [tf.reduce_max(net, reduction_indices=[1])], message='Max out: ', summarize=20)
+            net = tf.Print(net, [tf.reduce_min(net, reduction_indices=[1])], message='Min out: ', summarize=20)
+            net = slim.softmax(net, scope='sm1')
+            net = tf.Print(net, [tf.argmax(net, axis=1)], message='Net out argmax: ', summarize=100)
+            net = tf.Print(net, [tf.reduce_max(net, axis=1)], message='Net out max prob: ', summarize=100)
+            net = tf.Print(net, [net], message='Net out: ')
+            softmax = net
+        return logits, softmax
 
 
 def padded_mini_vgg(inputs, is_training, dropout, scope=data.DEFAULT_SCOPE):
@@ -121,10 +181,13 @@ def padded_mini_vgg(inputs, is_training, dropout, scope=data.DEFAULT_SCOPE):
                                        weights_regularizer=slim.l2_regularizer(0.0005))
             net = tf.Print(net, [net], message='Flatten out: ', summarize=20)
 
+            logits = net
+
             net = tf.Print(net, [tf.reduce_max(net, reduction_indices=[1])], message='Max out: ', summarize=20)
             net = tf.Print(net, [tf.reduce_min(net, reduction_indices=[1])], message='Min out: ', summarize=20)
             net = slim.softmax(net, scope='sm1')
-
-            net = tf.Print(net, [tf.argmax(net, axis=1)], message='Net out argmax: ')
+            net = tf.Print(net, [tf.argmax(net, axis=1)], message='Net out argmax: ', summarize=100)
+            net = tf.Print(net, [tf.reduce_max(net, axis=1)], message='Net out max prob: ', summarize=100)
             net = tf.Print(net, [net], message='Net out: ')
-        return net
+            softmax = net
+        return logits, softmax

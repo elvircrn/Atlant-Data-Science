@@ -49,8 +49,8 @@ def get_experiment_params():
         n_classes=data.N_CLASSES,
         train_steps=70000,
         min_eval_frequency=5,
-        architecture=arch.padded_mini_vgg,
-        dropout=0.7,
+        architecture=arch.small_vgg,
+        dropout=0.5,
         validation=False,
         label_type=cf.LabelType.cross_entropy
     )
@@ -62,10 +62,10 @@ def get_validation_params():
         n_classes=data.N_CLASSES,
         train_steps=1,
         min_eval_frequency=1,
-        architecture=arch.padded_mini_vgg,
+        architecture=arch.small_vgg,
         dropout=1.0,
         validation=True,
-        label_type=cf.LabelType.cross_entropy
+        label_type=cf.LabelType.majority_vote
     )
 
 
@@ -159,8 +159,8 @@ def get_estimator(run_config=None, params=None):
 def model_fn(features, labels, mode, params):
     is_training = mode == ModeKeys.TRAIN
     # Define model's architecture
-    logits = params.architecture(inputs=features, dropout=params.dropout, is_training=is_training)
-    predictions = tf.argmax(logits, axis=1)
+    logits, softmax = params.architecture(inputs=features, dropout=params.dropout, is_training=is_training)
+    predictions = tf.argmax(softmax, axis=1)
     # Loss, training and eval operations are not needed during inference.
     loss = None
     train_op = None
@@ -172,11 +172,12 @@ def model_fn(features, labels, mode, params):
                 onehot_labels=labels,
                 logits=logits)
         elif params.label_type == cf.LabelType.cross_entropy:
-            loss = tf.losses.log_loss(
+            loss = tf.nn.softmax_cross_entropy_with_logits(
                 labels=labels,
-                predictions=logits)
+                logits=logits)
         train_op = get_train_op_fn(loss, params)
         eval_metric_ops = get_eval_metric_ops(labels, predictions)
+
     return tf.estimator.EstimatorSpec(
         mode=mode,
         predictions=predictions,
@@ -205,6 +206,14 @@ def f_score(predictions=None, labels=None, weights=None):
 
 def get_eval_metric_ops(labels, predictions):
     argmax_labels = tf.argmax(input=labels, axis=1)
+    # argmax_labels = tf.one_hot(argmax_labels, depth=1)
+    # predictions = tf.one_hot(predictions, depth=1)
+
+    # confusion_matrix = tf.Print(tf.confusion_matrix(tf.reshape(labels, [-1]), tf.reshape(predictions, [-1]),
+    #                                                 num_classes=data.N_CLASSES),
+    #                             [tf.confusion_matrix(tf.reshape(labels, [-1]), tf.reshape(predictions, [-1]),
+    #                                                  num_classes=data.N_CLASSES)], message='Confusion matrix')
+    # confusion_matrix.eval(feed_dict={}, session=tf.Session())
 
     eval_dict = {
         'Accuracy': tf.metrics.accuracy(
@@ -220,7 +229,7 @@ def get_eval_metric_ops(labels, predictions):
             labels=argmax_labels,
             predictions=predictions,
             name='recall'
-        ),
+        )
         # 'F-Score': f_score(predictions, labels)
     }
 
@@ -269,7 +278,7 @@ def get_train_inputs(batch_size, datasets):
                     iterator.initializer,
                     feed_dict={images_placeholder: images,
                                labels_placeholder: labels})
-            next_label = tf.Print(next_label, [tf.argmax(next_label, axis=1)], message="Train labels: ")
+            next_label = tf.Print(next_label, [tf.argmax(next_label, axis=1)], message="Train labels: ", summarize=100)
             # Return batched (features, labels)
             return next_example, next_label
 
@@ -301,7 +310,7 @@ def get_test_inputs(batch_size, datasets):
                     iterator.initializer,
                     feed_dict={images_placeholder: images,
                                labels_placeholder: labels})
-            next_label = tf.Print(next_label, [tf.argmax(next_label, axis=1)], message="Test labels: ")
+            next_label = tf.Print(next_label, [tf.argmax(next_label, axis=1)], message="Test labels: ", summarize=100)
             return next_example, next_label
 
     # Return function and hook

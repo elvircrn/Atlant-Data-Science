@@ -7,6 +7,7 @@ import data
 from helpers import perc_split, unison_shuffled_copies, shuffle
 import helpers as hlp
 from sklearn.preprocessing import normalize
+from sklearn import preprocessing
 
 
 def to_vector(pixels):
@@ -59,7 +60,7 @@ def split(features, labels):
 
 def downsample(features, labels):
     emotion_groups = split_emotions(features, labels)
-    emotion_groups[0] = emotion_groups[0][0][0:9000], emotion_groups[0][1][0:9000]
+    emotion_groups[0] = emotion_groups[0][0][0:4000], emotion_groups[0][1][0:4000]
     emotion_groups[1] = emotion_groups[1][0][0:7000], emotion_groups[1][1][0:7000]
 
     return hlp.merge([emotion_groups[emotion_id][0] for emotion_id in range(data.N_CLASSES)]), hlp.merge(
@@ -143,6 +144,13 @@ def preprocess_and_save():
 def save(features, labels):
     np.save(data.FEATURES_FILE, features)
     np.save(data.LABELS_FILE, labels)
+
+
+# TODO: Finish implementing
+def scale_features(datasets):
+    for set_id in range(3):
+        datasets[set_id] = datasets[set_id]
+    return datasets
 
 
 def load_from_npy(split_data=False, features_loc=data.FEATURES_FILE, labels_loc=data.LABELS_FILE, shuffle_data=True):
