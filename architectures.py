@@ -177,17 +177,8 @@ def padded_mini_vgg(inputs, is_training, dropout, scope=data.DEFAULT_SCOPE):
             _LAYERS.append(net)
 
             net = slim.flatten(net)
-            net = slim.fully_connected(net, data.N_CLASSES, activation_fn=None, scope='fc1',
-                                       weights_regularizer=slim.l2_regularizer(0.0005))
-            net = tf.Print(net, [net], message='Flatten out: ', summarize=20)
+            net = slim.fully_connected(net, data.N_CLASSES, activation_fn=None, scope='fc1')
 
             logits = net
-
-            net = tf.Print(net, [tf.reduce_max(net, reduction_indices=[1])], message='Max out: ', summarize=20)
-            net = tf.Print(net, [tf.reduce_min(net, reduction_indices=[1])], message='Min out: ', summarize=20)
-            net = slim.softmax(net, scope='sm1')
-            net = tf.Print(net, [tf.argmax(net, axis=1)], message='Net out argmax: ', summarize=100)
-            net = tf.Print(net, [tf.reduce_max(net, axis=1)], message='Net out max prob: ', summarize=100)
-            net = tf.Print(net, [net], message='Net out: ')
-            softmax = net
+            softmax = slim.softmax(net, scope='sm1')
         return logits, softmax

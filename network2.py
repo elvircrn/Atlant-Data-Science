@@ -49,7 +49,7 @@ def get_experiment_params():
         n_classes=data.N_CLASSES,
         train_steps=70000,
         min_eval_frequency=5,
-        architecture=arch.small_vgg,
+        architecture=arch.padded_mini_vgg,
         dropout=0.5,
         validation=False,
         label_type=cf.LabelType.cross_entropy
@@ -62,7 +62,7 @@ def get_validation_params():
         n_classes=data.N_CLASSES,
         train_steps=1,
         min_eval_frequency=1,
-        architecture=arch.small_vgg,
+        architecture=arch.padded_mini_vgg,
         dropout=1.0,
         validation=True,
         label_type=cf.LabelType.majority_vote

@@ -1,0 +1,1 @@
+"C:\Program Files\Anaconda3\python.exe" "C:/Users/elvircrn/Documents/codes2/Atlant Data Science/Project1/Atlant-Data-Science/emotion.py"

@@ -58,6 +58,7 @@ class FaceExtractor:
 
         for (x, y, w, h) in faces:
             crop_img = image[y: y + h, x: x + w]
+            image = cv2.rectangle(image, (x + 1, y + 1), (x + w - 1, y + h - 1), (255, 0, 0), 2)
             full_faces.append(crop_img)
             crop_img = cv2.resize(crop_img, (48, 48), cv2.INTER_CUBIC)
             crop_img = cv2.cvtColor(crop_img, cv2.COLOR_BGR2GRAY)
@@ -65,5 +66,5 @@ class FaceExtractor:
             lower_right_corners.append((y + h, x + w))
             face_features.append(flatten(crop_img))
 
-        return face_features, lower_right_corners, full_faces
+        return face_features, lower_right_corners, full_faces, images, image
 

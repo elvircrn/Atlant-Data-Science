@@ -41,8 +41,8 @@ def async_webcam():
     while rval:
         rval, frame = vc.read()
         full_frame = cv2.flip(frame, 1)
+        images, lower_right_corners, extracted_faces, full_frame = FaceExtractor.extract_faces(full_frame)
         cv2.imshow(data.MAIN_WINDOW_NAME, full_frame)
-        images, lower_right_corners, extracted_faces = FaceExtractor.extract_faces(full_frame)
 
         if len(images) > 0 and queue.qsize() < queue.maxsize:
             queue.put_nowait((images, extracted_faces))
@@ -117,7 +117,7 @@ def launch_webcam():
     while rval:
         rval, frame = vc.read()
         full_frame = cv2.flip(frame, 1)
-        images, lower_right_corners, extracted_faces = FaceExtractor.extract_faces(full_frame)
+        images, lower_right_corners, extracted_faces, fixed_faces, full_frame = FaceExtractor.extract_faces(full_frame)
 
         if len(images) > 0:
             if enable_predictions:
@@ -125,10 +125,11 @@ def launch_webcam():
             else:
                 predictions = np.zeros(len(images))
 
-            if len(extracted_faces) == 0:
+            if len(fixed_faces) == 0:
+                cv2.imshow(data.MAIN_WINDOW_NAME, full_frame)
                 continue
 
-            vis = np.concatenate(extracted_faces, axis=1)
+            vis = np.concatenate(fixed_faces, axis=1)
             cv2.imshow(data.EXTRACTED_WINDOW_NAME, vis)
 
             if enable_visualization:
@@ -142,7 +143,8 @@ def launch_webcam():
                             FontData.font_scale,
                             FontData.font_color,
                             FontData.line_type)
-                cv2.imshow(data.MAIN_WINDOW_NAME, full_frame)
+
+            cv2.imshow(data.MAIN_WINDOW_NAME, full_frame)
         key = cv2.waitKey(20)
         if key == 27:  # exit on ESC
             break
